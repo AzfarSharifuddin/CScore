@@ -1,9 +1,9 @@
+//import 'package:cscore/AIModule/ai_chatbox.dart';
+import 'package:cscore/DashboardModule/dashboard.dart';
+import 'package:cscore/ForumModule/forum.dart';
+import 'package:cscore/QuizModule/quiz.dart';
+import 'package:cscore/AccountModule/user_profile.dart';
 import 'package:flutter/material.dart';
-import 'package:cscore/dashboard.dart';
-import 'package:cscore/forum.dart';
-import 'package:cscore/user_profile.dart';
-import 'package:cscore/quiz.dart';
-
 
 class Learning extends StatefulWidget {
   const Learning({super.key});
