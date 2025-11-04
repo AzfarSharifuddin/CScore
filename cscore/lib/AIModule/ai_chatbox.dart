@@ -16,7 +16,7 @@ class _AiChatBotState extends State<AiChatBot> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('AI ChatBox'),),
+      appBar: AppBar(title: Text('AI ChatBox'),backgroundColor: Colors.grey[200],),
     );
   }
 }

@@ -17,7 +17,7 @@ class _ProgressTrackerState extends State<ProgressTracker> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Progress Tracker'),),
+      appBar: AppBar(title: Text('Progress Tracker',),backgroundColor: Colors.grey[200],),
       body: Text('Progress Tracker page'),
       bottomNavigationBar: BottomNavigationBar(
             type: BottomNavigationBarType.fixed,
