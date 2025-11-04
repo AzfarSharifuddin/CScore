@@ -1,4 +1,4 @@
-//import 'package:cscore/AIModule/ai_chatbox.dart';
+import 'package:cscore/AIModule/ai_chatbox.dart';
 import 'package:cscore/DashboardModule/dashboard.dart';
 import 'package:cscore/ForumModule/forum.dart';
 import 'package:cscore/QuizModule/quiz.dart';
