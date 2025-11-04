@@ -1,8 +1,9 @@
+
+import 'package:cscore/DashboardModule/dashboard.dart';
+import 'package:cscore/ForumModule/forum.dart';
+import 'package:cscore/LearningModule/learning.dart';
+import 'package:cscore/AccountModule/user_profile.dart';
 import 'package:flutter/material.dart';
-import 'package:cscore/learning.dart';
-import 'package:cscore/dashboard.dart';
-import 'package:cscore/forum.dart';
-import 'package:cscore/user_profile.dart';
 
 class Quiz extends StatefulWidget {
   const Quiz({super.key});

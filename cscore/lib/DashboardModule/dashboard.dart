@@ -1,9 +1,9 @@
-import 'package:cscore/forum.dart';
-import 'package:cscore/user_profile.dart';
+//import 'package:cscore/AIModule/ai_chatbox.dart';
+import 'package:cscore/ForumModule/forum.dart';
+import 'package:cscore/LearningModule/learning.dart';
+import 'package:cscore/QuizModule/quiz.dart';
+import 'package:cscore/AccountModule/user_profile.dart';
 import 'package:flutter/material.dart';
-import 'package:cscore/quiz.dart';
-import 'package:cscore/learning.dart';
-
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
 
