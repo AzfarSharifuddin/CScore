@@ -4,19 +4,28 @@ import 'package:cscore/ForumModule/forum.dart';
 import 'package:cscore/LearningModule/learning.dart';
 import 'package:cscore/QuizModule/quiz.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cscore/firebase_options.dart';
 
-void main() => runApp(MaterialApp(
-  initialRoute: '/',
-  routes: {
-    '/':(context) => Dashboard(),
-    '/learning':(context) => Learning(),
-    '/quiz':(context) => Quiz(),
-    '/ai':(context) => AiChatBot(), 
-    '/forum':(context) => Forum(),
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized(); 
 
+  await Firebase.initializeApp(
+    options:DefaultFirebaseOptions.currentPlatform
+  );
 
-  },
-));
+  runApp(MaterialApp(
+    initialRoute: '/',
+    routes: {
+      '/': (context) => Dashboard(),
+      '/learning': (context) => Learning(),
+      '/quiz': (context) => Quiz(),
+      '/ai': (context) => AiChatBot(),
+      '/forum': (context) => Forum(),
+    },
+  ));
+}
+
 
 
 

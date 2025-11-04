@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "734956250037",
+    "project_id": "cscore-devflow",
+    "storage_bucket": "cscore-devflow.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:734956250037:android:b0c09e8678ec7d8afeeffc",
+        "android_client_info": {
+          "package_name": "com.example.cscore"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqxEawtmvNL1Au-KbSIsL8hBDw_nMCQUo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
