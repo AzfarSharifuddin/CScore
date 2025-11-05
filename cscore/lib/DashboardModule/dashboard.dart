@@ -3,7 +3,7 @@
 //import 'package:cscore/AIModule/ai_chatbox.dart';
 //import 'package:cscore/ForumModule/forum.dart';
 //import 'package:cscore/LearningModule/learning.dart';
-import 'package:cscore/ProgressTrackerModule/progress.dart';
+import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 //import 'package:cscore/QuizModule/quiz.dart';
 import 'package:cscore/AccountModule/user_profile.dart';
 import 'package:flutter/material.dart';
@@ -217,7 +217,7 @@ class _DashboardState extends State<Dashboard> {
           if (index == 0) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const ProgressTracker()),
+              MaterialPageRoute(builder: (context) => ViewProgressScreen()),
             );
           } else if (index == 2) {
             Navigator.pushReplacement(
