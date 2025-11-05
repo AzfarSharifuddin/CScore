@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
-//import 'package:cscore/AccountModule/user_profile.dart';
-// Assuming these imports are correct for your project structure
-// import '../Services/Firestore_services.dart';
-// import '../Widgets/Announcement_card.dart';
-// import '../Widgets/Activity_card.dart';
-// import '../Widgets/Materials_card.dart';
+import 'package:cscore/AccountModule/user_profile.dart'; // 🔹 FIXED: Uncommented this line
 
 // --- Mock Classes (so the file is self-contained) ---
 // You can remove these if you have the real files imported.
@@ -176,7 +171,8 @@ class StudentDashboard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12), // <-- NEW SPACING
-                Expanded( // <-- NEW BUTTON
+                Expanded(
+                  // <-- NEW BUTTON
                   child: ElevatedButton.icon(
                     onPressed: () {
                       // TODO: Navigate to Forum page
@@ -219,39 +215,44 @@ class StudentDashboard extends StatelessWidget {
           ],
         ),
       ),
+      
+      // 🔹 --- START OF FIXED SECTION --- 🔹
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: 1,
+        currentIndex: 1, // Stays at 1 for the 'Home' screen
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.black,
         onTap: (index) {
           if (index == 0) {
-            Navigator.pushReplacement(
+            // FIXED: Use 'push' to allow user to go back
+            Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => ViewProgressScreen()),
             );
-          } /*else if (index == 2) {
-            Navigator.pushReplacement(
+          } else if (index == 2) {
+             // FIXED: Enabled this navigation and used 'push'
+            Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const UserProfile()),
             );
-          }*/
+          }
         },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.track_changes),
-            label: '',
+            label: 'Progress', // FIXED: Added label
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
-            label: '',
+            label: 'Home', // FIXED: Added label
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: '',
+            label: 'Profile', // FIXED: Added label
           ),
         ],
       ),
+      // 🔹 --- END OF FIXED SECTION --- 🔹
     );
   }
 }

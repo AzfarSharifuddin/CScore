@@ -5,7 +5,7 @@
 //import 'package:cscore/LearningModule/learning.dart';
 import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 //import 'package:cscore/QuizModule/quiz.dart';
-import 'package:cscore/AccountModule/user_profile.dart';
+import 'package:cscore/AccountModule/user_profile.dart'; // <-- This import is needed
 import 'package:flutter/material.dart';
 
 // import your teacher/student dashboard screens
@@ -208,19 +208,22 @@ class _DashboardState extends State<Dashboard> {
         },
       ),
 
+      // 🔹 --- START OF FIXED SECTION --- 🔹
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: 1,
+        currentIndex: 1, // Stays at 1 for the 'Home' screen
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.black,
         onTap: (index) {
           if (index == 0) {
-            Navigator.pushReplacement(
+            // FIXED: Use 'push' to allow user to go back
+            Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => ViewProgressScreen()),
             );
           } else if (index == 2) {
-            Navigator.pushReplacement(
+            // FIXED: Use 'push' to allow user to go back
+            Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const UserProfile()),
             );
@@ -229,18 +232,19 @@ class _DashboardState extends State<Dashboard> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.track_changes),
-            label: '',
+            label: 'Progress', // FIXED: Added label
           ),
-          BottomNavigationBarItem(
+         BottomNavigationBarItem( // <--- This is the correct name
             icon: Icon(Icons.home),
-            label: '',
+            label: 'Home',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: '',
+            label: 'Profile', // FIXED: Added label
           ),
         ],
       ),
+      // 🔹 --- END OF FIXED SECTION --- 🔹
     );
   }
 }
