@@ -5,7 +5,11 @@ class AttemptQuizPage extends StatefulWidget {
   final String title;
   final List<Map<String, dynamic>> questions;
 
-  const AttemptQuizPage({super.key, required this.title, required this.questions});
+  const AttemptQuizPage({
+    super.key,
+    required this.title,
+    required this.questions,
+  });
 
   @override
   State<AttemptQuizPage> createState() => _AttemptQuizPageState();
@@ -13,7 +17,7 @@ class AttemptQuizPage extends StatefulWidget {
 
 class _AttemptQuizPageState extends State<AttemptQuizPage> {
   int currentQuestion = 0;
-  List<dynamic> answers = []; // can hold int? or String for subjective
+  List<dynamic> answers = [];
   int score = 0;
   bool showFeedback = false;
   bool isLocked = false;
@@ -33,7 +37,9 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
       isLocked = true;
     });
 
-    if (index == widget.questions[currentQuestion]['answer']) score++;
+    if (index == widget.questions[currentQuestion]['answer']) {
+      score++;
+    }
 
     await Future.delayed(const Duration(milliseconds: 1200));
     nextQuestion();
@@ -85,42 +91,88 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
     final questionType = question['type'];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.title} (${currentQuestion + 1}/${widget.questions.length})'),
-        backgroundColor: Colors.green,
-      ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 400),
-        child: Padding(
-          key: ValueKey(currentQuestion),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                question['question'],
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          child: Padding(
+            key: ValueKey(currentQuestion),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 🔹 Custom header instead of AppBar
+                _buildHeader(),
 
-              if (questionType == 'objective') ..._buildObjectiveOptions(question),
-              if (questionType == 'subjective') ..._buildSubjectiveInput(),
+                const SizedBox(height: 20),
+                Text(
+                  question['question'],
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
 
-              const Spacer(),
-              LinearProgressIndicator(
-                value: (currentQuestion + 1) / widget.questions.length,
-                backgroundColor: Colors.grey[300],
-                color: Colors.green,
-                minHeight: 6,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ],
+                if (questionType == 'objective')
+                  ..._buildObjectiveOptions(question),
+                if (questionType == 'subjective')
+                  ..._buildSubjectiveInput(),
+
+                const Spacer(),
+
+                // 🔹 Progress bar moved to header area visually
+                LinearProgressIndicator(
+                  value: (currentQuestion + 1) / widget.questions.length,
+                  backgroundColor: Colors.grey[300],
+                  color: Colors.green,
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Title + Progress counter
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: Text(
+                widget.title,
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.green),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                "${currentQuestion + 1}/${widget.questions.length}",
+                style: const TextStyle(
+                    color: Colors.green, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 🟩 Objective Question UI
   List<Widget> _buildObjectiveOptions(Map<String, dynamic> question) {
     return List.generate(question['options'].length, (index) {
       final isSelected = answers[currentQuestion] == index;
@@ -134,13 +186,16 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
         bgColor = Colors.green.withOpacity(0.1);
       }
 
-      return Container(
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? Colors.green : Colors.grey.withOpacity(0.4),
+            color: isSelected
+                ? Colors.green
+                : Colors.grey.withOpacity(0.4),
           ),
         ),
         child: RadioListTile<int>(
@@ -167,6 +222,7 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
     });
   }
 
+  // ✍️ Subjective Question UI
   List<Widget> _buildSubjectiveInput() {
     return [
       const Text(
@@ -183,22 +239,35 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
         ),
         maxLines: 4,
         onChanged: (value) {
-          answers[currentQuestion] = value;
+          setState(() {
+            answers[currentQuestion] = value;
+          });
         },
       ),
       const SizedBox(height: 20),
-      Align(
-        alignment: Alignment.centerRight,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-          onPressed: _textController.text.isEmpty ? null : nextQuestion,
-          child: Text(
-            currentQuestion == widget.questions.length - 1
-                ? "Submit Quiz"
-                : "Next Question",
+
+      AnimatedOpacity(
+        duration: const Duration(milliseconds: 300),
+        opacity: _textController.text.isNotEmpty ? 1.0 : 0.5,
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _textController.text.isNotEmpty
+                  ? Colors.green
+                  : Colors.grey,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            onPressed: _textController.text.isNotEmpty ? nextQuestion : null,
+            child: Text(
+              currentQuestion == widget.questions.length - 1
+                  ? "Submit Quiz"
+                  : "Next Question",
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       ),
