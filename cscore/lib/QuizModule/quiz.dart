@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'view_quiz.dart';
 
+const mainColor = Color.fromRGBO(0, 70, 67, 1);
+
 class QuizListPage extends StatefulWidget {
   const QuizListPage({super.key});
 
@@ -33,8 +35,11 @@ class _QuizListPageState extends State<QuizListPage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Quizzes', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.green,
+        title: const Text(
+          'Quizzes',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: mainColor,
         elevation: 0,
       ),
       body: ListView.builder(
@@ -80,41 +85,59 @@ class _QuizListPageState extends State<QuizListPage> {
                   ),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(quiz['title'],
-                              style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text(
+                            quiz['title'],
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 6),
-                          Text(quiz['category'],
-                              style: TextStyle(
-                                  fontSize: 14, color: Colors.grey[600])),
+                          Text(
+                            quiz['category'],
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
                           const SizedBox(height: 10),
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: Colors.green[100],
+                                  color: mainColor,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text(quiz['difficulty'],
-                                    style: TextStyle(
-                                        color: Colors.green[800],
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12)),
+                                child: Text(
+                                  quiz['difficulty'],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ),
                               const SizedBox(width: 10),
                               Text(
                                 quiz['status'],
                                 style: TextStyle(
-                                    color: quiz['status'] == 'Attempted'
-                                        ? Colors.blue
-                                        : Colors.grey[600],
-                                    fontStyle: FontStyle.italic,
-                                    fontSize: 12),
+                                  color: quiz['status'] == 'Attempted'
+                                      ? mainColor
+                                      : Colors.grey[600],
+                                  fontStyle: FontStyle.italic,
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ),
@@ -124,8 +147,11 @@ class _QuizListPageState extends State<QuizListPage> {
                   ),
                   const Padding(
                     padding: EdgeInsets.only(right: 16),
-                    child: Icon(Icons.arrow_forward_ios,
-                        color: Colors.grey, size: 18),
+                    child: Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.grey,
+                      size: 18,
+                    ),
                   ),
                 ],
               ),

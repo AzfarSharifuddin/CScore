@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'score_quiz.dart';
 
+const mainColor = Color.fromRGBO(0, 70, 67, 1);
+
 class AttemptQuizPage extends StatefulWidget {
   final String title;
   final List<Map<String, dynamic>> questions;
@@ -119,11 +121,11 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
 
                 const Spacer(),
 
-                // 🔹 Progress bar moved to header area visually
+                // 🔹 Progress bar
                 LinearProgressIndicator(
                   value: (currentQuestion + 1) / widget.questions.length,
                   backgroundColor: Colors.grey[300],
-                  color: Colors.green,
+                  color: mainColor,
                   minHeight: 6,
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -149,7 +151,7 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
                 style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Colors.green),
+                    color: mainColor),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -157,13 +159,13 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.green[50],
+                color: mainColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 "${currentQuestion + 1}/${widget.questions.length}",
                 style: const TextStyle(
-                    color: Colors.green, fontWeight: FontWeight.w600),
+                    color: mainColor, fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -180,10 +182,10 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
 
       Color? bgColor;
       if (showFeedback) {
-        if (isCorrect) bgColor = Colors.green.withOpacity(0.2);
+        if (isCorrect) bgColor = mainColor.withOpacity(0.2);
         else if (isSelected) bgColor = Colors.red.withOpacity(0.2);
       } else if (isSelected) {
-        bgColor = Colors.green.withOpacity(0.1);
+        bgColor = mainColor.withOpacity(0.1);
       }
 
       return AnimatedContainer(
@@ -194,7 +196,7 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected
-                ? Colors.green
+                ? mainColor
                 : Colors.grey.withOpacity(0.4),
           ),
         ),
@@ -205,7 +207,7 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
               fontSize: 16,
               color: showFeedback
                   ? (isCorrect
-                      ? Colors.green[800]
+                      ? mainColor
                       : isSelected
                           ? Colors.red[800]
                           : Colors.black)
@@ -216,7 +218,7 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
           value: index,
           groupValue: answers[currentQuestion],
           onChanged: (int? value) => handleAnswerTap(index),
-          activeColor: Colors.green,
+          activeColor: mainColor,
         ),
       );
     });
@@ -254,7 +256,7 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: _textController.text.isNotEmpty
-                  ? Colors.green
+                  ? mainColor
                   : Colors.grey,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -266,7 +268,8 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
               currentQuestion == widget.questions.length - 1
                   ? "Submit Quiz"
                   : "Next Question",
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
         ),
