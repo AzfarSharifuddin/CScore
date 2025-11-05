@@ -25,26 +25,59 @@ class TeacherDashboard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// --- ADDED BUTTONS HERE ---
+
+            /// --- UPDATED BUTTONS (NOW LOOK LIKE CARDS) ---
             Row(
               children: [
-                OutlinedButton(
-                  onPressed: () {
-                    // TODO: Navigate to Create Announcement Page
-                  },
-                  child: const Text("Create Announcement"),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      // TODO: Navigate to Create Announcement Page
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],  // Slightly darker
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        "New Announcement",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold, // Same as "Class: Programming"
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    // TODO: Navigate to Manage Activities Page
-                  },
-                  child: const Text("Manage Activities"),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      // TODO: Navigate to Manage Activities Page
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300], // Same box color
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        "Manage Activities",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold, // Same font style
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            /// ----------------------------
+            const SizedBox(height: 20),
+            /// -------------------------------------------------
 
             const Text(
               'Class: Programming',
@@ -65,7 +98,6 @@ class TeacherDashboard extends StatelessWidget {
               'Announcements',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-
             ...data.getAnnouncements()
                 .map((a) => AnnouncementCard(announcement: a)),
 
