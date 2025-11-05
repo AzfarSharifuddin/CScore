@@ -1,28 +1,30 @@
-//import 'package:cscore/AIModule/ai_chatbox.dart';
-import 'package:cscore/DashboardModule/dashboard.dart';
-import 'package:cscore/ForumModule/forum.dart';
-import 'package:cscore/QuizModule/quiz.dart';
-import 'package:cscore/AccountModule/user_profile.dart';
 import 'package:flutter/material.dart';
+import 'ViewTutorial/viewtutorial.dart';
 
-class Learning extends StatefulWidget {
-  const Learning({super.key});
+class LearningPage extends StatelessWidget {
+  const LearningPage({super.key});
 
-  @override
-  State<Learning> createState() => _LearningState();
-}
-
-class _LearningState extends State<Learning> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Learning'),
+        title: const Text('Learning Module'),
         backgroundColor: Colors.grey[200],
-      
       ),
-      body: Text('Learning page'),
-      
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            // Navigate to ViewTutorial screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ViewTutorialPage(),
+              ),
+            );
+          },
+          child: const Text('View Tutorials'),
+        ),
+      ),
     );
   }
 }
