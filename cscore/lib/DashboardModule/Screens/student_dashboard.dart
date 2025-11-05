@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+//import 'package:cscore/ProgressTrackerModule/progress.dart';
+//import 'package:cscore/AccountModule/user_profile.dart';
 // Assuming these imports are correct for your project structure
 // import '../Services/Firestore_services.dart';
 // import '../Widgets/Announcement_card.dart';
@@ -145,8 +147,8 @@ class StudentDashboard extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // TODO: Add navigation to Learning Modules page
-                      print('Navigate to Learning Modules');
+                      Navigator.pushNamed(context, '/learning');
+                      
                     },
                     icon: const Icon(Icons.school_rounded),
                     label: const Text('Modules'),
@@ -162,8 +164,8 @@ class StudentDashboard extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // TODO: Add navigation to Quizzes page
-                      print('Navigate to Quizzes');
+                      Navigator.pushNamed(context, '/quiz');
+                      
                     },
                     icon: const Icon(Icons.quiz_rounded),
                     label: const Text('Quizzes'),
@@ -202,6 +204,40 @@ class StudentDashboard extends StatelessWidget {
           ],
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: 1,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.black,
+        /*onTap: (index) {
+          if (index == 0) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const ProgressTracker()),
+            );
+          } else if (index == 2) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const UserProfile()),
+            );
+          }
+        }, update later sebab student page dngn teacher page lain lain */
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.track_changes),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: '',
+          ),
+        ],
+      ),
+    
     );
   }
 }
