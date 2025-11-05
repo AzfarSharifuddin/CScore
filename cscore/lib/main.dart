@@ -19,8 +19,13 @@ Future<void> main() async {
     initialRoute: '/',
     routes: {
       '/': (context) => LoginPage(),
+<<<<<<< Updated upstream
       '/learning': (context) => ViewTutorialPage(),
       '/quiz': (context) => Quiz(),
+=======
+      '/learning': (context) => Learning(),
+      '/quiz': (context) => QuizListPage(),
+>>>>>>> Stashed changes
       '/ai': (context) => AiChatBot(),
       '/forum': (context) => Forum(),
     },

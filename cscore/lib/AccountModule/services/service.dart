@@ -36,7 +36,7 @@ class _UserProfileState extends State<UserProfile> {
                 Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Learning()),);
               }
               else if(index == 2){
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Quiz()),);
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const QuizListPage()),);
               }
               else if(index == 3){
                 Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Forum()),);
