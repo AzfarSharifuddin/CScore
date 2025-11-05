@@ -11,31 +11,13 @@ class QuizListPage extends StatefulWidget {
 class _QuizListPageState extends State<QuizListPage> {
   final List<Map<String, dynamic>> quizzes = [
     {
-      'title': 'HTML Quiz',
-      'category': 'Web Development',
-      'difficulty': 'Easy',
-      'status': 'Not Attempted',
-      'image': 'assets/quiz_assets/html.jpg',
-      'description': 'Test your knowledge of HTML tags and structure.',
-      'questions': htmlQuestions,
-    },
-    {
-      'title': 'CSS Quiz',
+      'title': 'Web Development Fundamentals',
       'category': 'Web Development',
       'difficulty': 'Medium',
       'status': 'Not Attempted',
-      'image': 'assets/quiz_assets/css.jpg',
-      'description': 'Assess your understanding of CSS selectors and styling rules.',
-      'questions': cssQuestions,
-    },
-    {
-      'title': 'JavaScript Quiz',
-      'category': 'Web Development',
-      'difficulty': 'Hard',
-      'status': 'Not Attempted',
-      'image': 'assets/quiz_assets/javascript.jpg',
-      'description': 'Challenge your JS skills with tricky code logic questions.',
-      'questions': jsQuestions,
+      'image': 'assets/quiz_assets/html.jpg',
+      'description': 'Covers HTML, CSS, and short explanation questions.',
+      'questions': webDevMixedQuestions,
     },
   ];
 
@@ -84,7 +66,6 @@ class _QuizListPageState extends State<QuizListPage> {
               ),
               child: Row(
                 children: [
-                  // Quiz image
                   ClipRRect(
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
@@ -97,7 +78,6 @@ class _QuizListPageState extends State<QuizListPage> {
                       fit: BoxFit.cover,
                     ),
                   ),
-                  // Details
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -157,18 +137,26 @@ class _QuizListPageState extends State<QuizListPage> {
   }
 }
 
-// Mock question data
-final List<Map<String, dynamic>> htmlQuestions = [
-  {'question': 'Which tag creates a line break?', 'options': ['<lb>', '<br>', '<break>', '<newline>'], 'answer': 1},
-  {'question': 'Which tag defines a hyperlink?', 'options': ['<link>', '<a>', '<href>', '<url>'], 'answer': 1},
-];
-
-final List<Map<String, dynamic>> cssQuestions = [
-  {'question': 'Which property changes text color?', 'options': ['font-style', 'background-color', 'color', 'text-decoration'], 'answer': 2},
-  {'question': 'How do you center align text in CSS?', 'options': ['align: center;', 'text-align: center;', 'center-text;', 'text-style: center;'], 'answer': 1},
-];
-
-final List<Map<String, dynamic>> jsQuestions = [
-  {'question': 'Which keyword declares a variable in JavaScript?', 'options': ['var', 'let', 'const', 'all of the above'], 'answer': 3},
-  {'question': 'What is the output of: console.log(typeof null)?', 'options': ['null', 'undefined', 'object', 'number'], 'answer': 2},
+// Mixed quiz data with both question types
+final List<Map<String, dynamic>> webDevMixedQuestions = [
+  {
+    'type': 'objective',
+    'question': 'Which tag creates a line break in HTML?',
+    'options': ['<lb>', '<br>', '<break>', '<newline>'],
+    'answer': 1,
+  },
+  {
+    'type': 'subjective',
+    'question': 'Explain the purpose of the <div> tag in HTML.',
+  },
+  {
+    'type': 'objective',
+    'question': 'Which property changes the text color in CSS?',
+    'options': ['font-style', 'background-color', 'color', 'text-decoration'],
+    'answer': 2,
+  },
+  {
+    'type': 'subjective',
+    'question': 'Write a short CSS rule to make all <h1> text blue.',
+  },
 ];

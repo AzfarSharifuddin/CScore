@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cscore/DashboardModule/dashboard.dart';
 import 'package:cscore/DashboardModule/Screens/teacher_dashboard.dart';
 import 'package:cscore/DashboardModule/Screens/student_dashboard.dart';
+import 'registration.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

@@ -1,32 +1,46 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cscore/firebase_options.dart';
 import 'package:cscore/AIModule/ai_chatbox.dart';
 import 'package:cscore/DashboardModule/dashboard.dart';
 import 'package:cscore/ForumModule/forum.dart';
 import 'package:cscore/LearningModule/ViewTutorial/viewtutorial.dart';
 import 'package:cscore/QuizModule/quiz.dart';
 import 'package:cscore/AccountModule/screen/login.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cscore/firebase_options.dart';
+import 'package:cscore/AccountModule/screen/registration.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized(); 
+  WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
-    options:DefaultFirebaseOptions.currentPlatform
+    options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(MaterialApp(
-    initialRoute: '/',
-    routes: {
-      '/': (context) => LoginPage(),
-      '/learning': (context) => ViewTutorialPage(),
-      '/quiz': (context) => QuizListPage(),
-      '/ai': (context) => AiChatBot(),
-      '/forum': (context) => Forum(),
-    },
-  ));
+  runApp(const CScoreApp());
 }
 
+class CScoreApp extends StatelessWidget {
+  const CScoreApp({super.key});
 
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'CScore+',
 
+   
+      initialRoute: '/',
 
+  
+      routes: {
+        '/': (context) => const LoginPage(),
+        '/register': (context) => const RegisterPage(), 
+        '/dashboard': (context) => const Dashboard(),
+        '/learning': (context) => const ViewTutorialPage(),
+        '/quiz': (context) => const QuizListPage(),
+        '/ai': (context) => const AiChatBot(),
+        '/forum': (context) => const Forum(),
+      },
+    );
+  }
+}
