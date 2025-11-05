@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'quiz.dart';
-import 'package:cscore/DashboardModule/Screens/student_dashboard.dart'; // 👈 make sure this import matches your file name
+import 'package:cscore/DashboardModule/Screens/student_dashboard.dart'; // make sure path is correct
+
+const mainColor = Color.fromRGBO(0, 70, 67, 1);
 
 class ScoreQuizPage extends StatelessWidget {
   final String title;
@@ -46,7 +48,7 @@ class ScoreQuizPage extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green,
+                  color: mainColor,
                 ),
               ),
               const SizedBox(height: 40),
@@ -83,55 +85,65 @@ class ScoreQuizPage extends StatelessWidget {
 
               const Spacer(),
 
-              // ✅ Back to Quizzes button
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 50, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () => Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const QuizListPage()),
-                  (route) => false,
-                ),
-                child: const Text(
-                  "Back to Quizzes",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+              // ✅ Unified button width container
+              SizedBox(
+                width: double.infinity,
+                child: Column(
+                  children: [
+                    // Back to Quizzes button
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: mainColor,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 50, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const QuizListPage()),
+                        (route) => false,
+                      ),
+                      child: const Text(
+                        "Back to Quizzes",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
 
-              const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-              // 🏠 Back to Dashboard button
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.green, width: 2),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 50, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () => Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const StudentDashboard()),
-                  (route) => false,
-                ),
-                child: const Text(
-                  "Back to Dashboard",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
+                    // Back to Dashboard button (same width)
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: mainColor, width: 2),
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 50, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const StudentDashboard()),
+                        (route) => false,
+                      ),
+                      child: const Text(
+                        "Back to Dashboard",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: mainColor,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
@@ -144,7 +156,7 @@ class ScoreQuizPage extends StatelessWidget {
   }
 }
 
-/// 🌀 Custom Circular Progress Painter
+/// 🌀 Custom Circular Progress Painter (solid)
 class CircularScorePainter extends CustomPainter {
   final double percentage;
 
@@ -155,20 +167,16 @@ class CircularScorePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // Background ring
+    // Base ring
     final basePaint = Paint()
       ..color = Colors.grey.shade300
       ..strokeWidth = 14
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    // Progress ring (gradient)
+    // Progress ring (solid color)
     final progressPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Colors.green, Colors.lightGreenAccent],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromCircle(center: center, radius: radius))
+      ..color = mainColor
       ..strokeWidth = 14
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
