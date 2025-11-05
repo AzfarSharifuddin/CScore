@@ -43,7 +43,7 @@ dependencies:
   video_player: ^2.8.3       # Play video tutorials
   chewie: ^1.8.1
   flutter_cache_manager: ^3.3.2 # Optional caching for thumbnails
-  
+  cloud_firestore: ^6.1.0
 
 dev_dependencies:
   flutter_test:
