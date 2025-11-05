@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cscore/DashboardModule/dashboard.dart';
+import 'package:cscore/DashboardModule/Screens/teacher_dashboard.dart';
+import 'package:cscore/DashboardModule/Screens/student_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,29 +18,66 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  // Dummy login function (replace with Firebase, API, or DB later)
+  // Dummy credentials for demo
+  final Map<String, Map<String, String>> _users = {
+    'student': {
+      'email': 'student@example.com',
+      'password': '123456',
+    },
+    'teacher': {
+      'email': 'teacher@example.com',
+      'password': '654321',
+    },
+    'admin': {
+      'email': 'admin@example.com',
+      'password': 'admin123',
+    },
+  };
+
+  // Simulate login process
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    await Future.delayed(const Duration(seconds: 2)); // simulate server delay
+    await Future.delayed(const Duration(seconds: 2)); // simulate delay
 
-    // Simple validation simulation
-    if (_emailController.text == "student@example.com" &&
-        _passwordController.text == "123456") {
-      // Navigate to dashboard after login
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    String? userRole;
+
+    // Check which role matches the entered credentials
+    _users.forEach((role, creds) {
+      if (creds['email'] == email && creds['password'] == password) {
+        userRole = role;
+      }
+    });
+
+    setState(() => _isLoading = false);
+
+    if (userRole != null) {
+      Widget nextPage;
+      if (userRole == 'student') {
+        nextPage = const StudentDashboard();
+      } else {
+        // teacher or admin
+        nextPage = const TeacherDashboard();
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Welcome $userRole!')),
+      );
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const Dashboard()),
+        MaterialPageRoute(builder: (_) => nextPage),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid email or password')),
       );
     }
-
-    setState(() => _isLoading = false);
   }
 
   @override

@@ -15,7 +15,7 @@ class _QuizListPageState extends State<QuizListPage> {
       'category': 'Web Development',
       'difficulty': 'Easy',
       'status': 'Not Attempted',
-      'image': 'assets/html.png',
+      'image': 'assets/quiz_assets/html.jpg',
       'description': 'Test your knowledge of HTML tags and structure.',
       'questions': htmlQuestions,
     },
@@ -24,7 +24,7 @@ class _QuizListPageState extends State<QuizListPage> {
       'category': 'Web Development',
       'difficulty': 'Medium',
       'status': 'Not Attempted',
-      'image': 'assets/css.png',
+      'image': 'assets/quiz_assets/css.jpg',
       'description': 'Assess your understanding of CSS selectors and styling rules.',
       'questions': cssQuestions,
     },
@@ -33,7 +33,7 @@ class _QuizListPageState extends State<QuizListPage> {
       'category': 'Web Development',
       'difficulty': 'Hard',
       'status': 'Not Attempted',
-      'image': 'assets/js.png',
+      'image': 'assets/quiz_assets/javascript.jpg',
       'description': 'Challenge your JS skills with tricky code logic questions.',
       'questions': jsQuestions,
     },
@@ -51,25 +51,21 @@ class _QuizListPageState extends State<QuizListPage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
+        title: const Text('Quizzes', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.green,
         elevation: 0,
-        title: const Text(
-          'Quizzes',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
       ),
       body: ListView.builder(
-        itemCount: quizzes.length,
         padding: const EdgeInsets.all(16),
+        itemCount: quizzes.length,
         itemBuilder: (context, index) {
           final quiz = quizzes[index];
-          return GestureDetector(
+          return InkWell(
+            borderRadius: BorderRadius.circular(16),
             onTap: () async {
               final result = await Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => ViewQuizPage(quizData: quiz),
-                ),
+                MaterialPageRoute(builder: (_) => ViewQuizPage(quizData: quiz)),
               );
               if (result == true) markAsAttempted(quiz['title']);
             },
@@ -80,15 +76,15 @@ class _QuizListPageState extends State<QuizListPage> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: Row(
                 children: [
-                  // Image on the left
+                  // Quiz image
                   ClipRRect(
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
@@ -101,27 +97,21 @@ class _QuizListPageState extends State<QuizListPage> {
                       fit: BoxFit.cover,
                     ),
                   ),
-
-                  // Quiz Info
+                  // Details
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            quiz['title'],
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            quiz['category'],
-                            style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                          ),
-                          const SizedBox(height: 8),
+                          Text(quiz['title'],
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 6),
+                          Text(quiz['category'],
+                              style: TextStyle(
+                                  fontSize: 14, color: Colors.grey[600])),
+                          const SizedBox(height: 10),
                           Row(
                             children: [
                               Container(
@@ -130,25 +120,21 @@ class _QuizListPageState extends State<QuizListPage> {
                                   color: Colors.green[100],
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text(
-                                  quiz['difficulty'],
-                                  style: TextStyle(
-                                    color: Colors.green[800],
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
+                                child: Text(quiz['difficulty'],
+                                    style: TextStyle(
+                                        color: Colors.green[800],
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12)),
                               ),
                               const SizedBox(width: 10),
                               Text(
                                 quiz['status'],
                                 style: TextStyle(
-                                  color: quiz['status'] == 'Attempted'
-                                      ? Colors.blue
-                                      : Colors.grey[600],
-                                  fontStyle: FontStyle.italic,
-                                  fontSize: 12,
-                                ),
+                                    color: quiz['status'] == 'Attempted'
+                                        ? Colors.blue
+                                        : Colors.grey[600],
+                                    fontStyle: FontStyle.italic,
+                                    fontSize: 12),
                               ),
                             ],
                           ),
@@ -156,11 +142,10 @@ class _QuizListPageState extends State<QuizListPage> {
                       ),
                     ),
                   ),
-
-                  // Arrow Icon on the right
                   const Padding(
                     padding: EdgeInsets.only(right: 16),
-                    child: Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 18),
+                    child: Icon(Icons.arrow_forward_ios,
+                        color: Colors.grey, size: 18),
                   ),
                 ],
               ),
@@ -172,7 +157,7 @@ class _QuizListPageState extends State<QuizListPage> {
   }
 }
 
-// Mock Question Data
+// Mock question data
 final List<Map<String, dynamic>> htmlQuestions = [
   {'question': 'Which tag creates a line break?', 'options': ['<lb>', '<br>', '<break>', '<newline>'], 'answer': 1},
   {'question': 'Which tag defines a hyperlink?', 'options': ['<link>', '<a>', '<href>', '<url>'], 'answer': 1},
