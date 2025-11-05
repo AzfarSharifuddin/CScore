@@ -13,7 +13,7 @@ class ViewTutorialPage extends StatelessWidget {
           TutorialFile(
             fileName: 'Pengenalan HTML.pdf',
             fileType: 'pdf',
-            fileUrl: 'https://example.com/html_intro.pdf',
+            fileUrl: 'assets/mock_tutorials/sample_tutorial.pdf',
             teacherName: 'Cikgu Aisyah',
             description:
                 'Pengenalan struktur asas HTML, termasuk tag, elemen dan atribut penting untuk laman web pertama anda.',
@@ -22,7 +22,7 @@ class ViewTutorialPage extends StatelessWidget {
           TutorialFile(
             fileName: 'HTML Basics.mp4',
             fileType: 'video',
-            fileUrl: 'https://example.com/html_basics.mp4',
+            fileUrl: 'assets/mock_tutorials/sample_video.mp4',
             teacherName: 'Encik Farid',
             description:
                 'Video interaktif untuk memahami asas HTML dengan contoh visual menarik.',
@@ -45,7 +45,7 @@ class ViewTutorialPage extends StatelessWidget {
           TutorialFile(
             fileName: 'CSS Responsive Design.pdf',
             fileType: 'pdf',
-            fileUrl: 'https://example.com/css_responsive.pdf',
+            fileUrl: 'https://link.springer.com/content/pdf/10.1007/s12369-025-01299-2.pdf',
             teacherName: 'Encik Farid',
             description:
                 'Panduan lengkap untuk menjadikan laman web anda responsif pada semua peranti.',

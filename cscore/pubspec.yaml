@@ -36,6 +36,15 @@ dependencies:
   cupertino_icons: ^1.0.8
   firebase_core: ^4.2.1
 
+  dio: ^5.4.0                # Download files with progress
+  path_provider: ^2.1.3      # Access local storage
+  open_filex: ^4.5.0         # Open local files directly
+  pdfx: ^2.7.0               # Display PDF tutorials
+  video_player: ^2.8.3       # Play video tutorials
+  chewie: ^1.8.1
+  flutter_cache_manager: ^3.3.2 # Optional caching for thumbnails
+  
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -57,7 +66,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
-
+  assets:
+    - assets/mock_tutorials/sample_tutorial.pdf
+    - assets/mock_tutorials/sample_video.mp4
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

@@ -20,7 +20,7 @@ Future<void> main() async {
     routes: {
       '/': (context) => LoginPage(),
       '/learning': (context) => ViewTutorialPage(),
-      '/quiz': (context) => Quiz(),
+      '/quiz': (context) => QuizListPage(),
       '/ai': (context) => AiChatBot(),
       '/forum': (context) => Forum(),
     },
