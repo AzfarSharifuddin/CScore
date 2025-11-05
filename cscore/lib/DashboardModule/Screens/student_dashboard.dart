@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-//import 'package:cscore/ProgressTrackerModule/progress.dart';
+import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 //import 'package:cscore/AccountModule/user_profile.dart';
 // Assuming these imports are correct for your project structure
 // import '../Services/Firestore_services.dart';
@@ -224,19 +224,19 @@ class StudentDashboard extends StatelessWidget {
         currentIndex: 1,
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.black,
-        /*onTap: (index) {
+        onTap: (index) {
           if (index == 0) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const ProgressTracker()),
+              MaterialPageRoute(builder: (context) => ViewProgressScreen()),
             );
-          } else if (index == 2) {
+          } /*else if (index == 2) {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => const UserProfile()),
             );
-          }
-        }, update later sebab student page dngn teacher page lain lain */
+          }*/
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.track_changes),
