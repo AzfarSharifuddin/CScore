@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
       } else if (role.toLowerCase() == "admin") {
         nextPage = const AdminDashboard(); // Admin dashboard
       } else {
-        nextPage = const Dashboard();
+        nextPage = const RegisterPage();
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
