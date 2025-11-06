@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cscore/QuizModule/Management/create_quiz.dart';        // ✅ correct import
+import 'package:cscore/LearningModule/ViewTutorial/viewtutorial.dart';  // ✅ correct import
 
 class ManageActivitiesPage extends StatelessWidget {
   const ManageActivitiesPage({super.key});
@@ -16,10 +18,15 @@ class ManageActivitiesPage extends StatelessWidget {
         child: Column(
           children: [
 
-            // Card: Quiz
+            // ✅ QUIZ CARD
             GestureDetector(
               onTap: () {
-                // TODO: Navigate to Quiz Page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CreateQuizPage(), // ✅ goes to create quiz
+                  ),
+                );
               },
               child: Container(
                 padding: const EdgeInsets.all(18),
@@ -53,10 +60,15 @@ class ManageActivitiesPage extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Card: Learning Module
+            // ✅ LEARNING MODULE CARD
             GestureDetector(
               onTap: () {
-                // TODO: Navigate to Learning Module Page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ViewTutorialPage(), // ✅ goes to view tutorial
+                  ),
+                );
               },
               child: Container(
                 padding: const EdgeInsets.all(18),
@@ -87,9 +99,11 @@ class ManageActivitiesPage extends StatelessWidget {
                 ),
               ),
             ),
+
           ],
         ),
       ),
     );
   }
 }
+
