@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cscore/QuizModule/Models/quiz_model.dart';
 import 'score_quiz.dart';
+import 'package:cscore/QuizModule/Data/quiz_data.dart'; // or the correct path where evaluateQuizAnswers() lives
+
 
 const Color mainColor = Color.fromRGBO(0, 70, 67, 1);
 
@@ -68,25 +70,62 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
   }
 
   // ✅ Handle objective answer tap
-  Future<void> handleAnswerTap(int index) async {
-    if (isLocked) return;
+Future<void> handleAnswerTap(int index) async {
+  if (isLocked) return;
 
-    setState(() {
-      answers[currentQuestion] = index;
-      showFeedback = true;
-      isLocked = true;
-    });
+  setState(() {
+    answers[currentQuestion] = index;
+    showFeedback = true;
+    isLocked = true;
+  });
 
-    final correctIndex =
-        widget.quiz.questions[currentQuestion].answer ?? -1;
+  final question = widget.quiz.questions[currentQuestion];
+  final correctIndex = question.answer ?? -1;
 
-    if (index == correctIndex) {
-      score++;
-    }
+  // Use the fake AI evaluator for feedback
+  final feedback = evaluateQuizAnswers(
+    [ // just one question to evaluate
+      {
+        'type': 'objective',
+        'question': question.question,
+        'options': question.options,
+        'answer': correctIndex,
+      }
+    ],
+    {0: index},
+  ).first;
 
-    await Future.delayed(const Duration(milliseconds: 1200));
-    nextQuestion();
-  }
+  // Increase score if correct
+  if (feedback['correct'] == true) score++;
+
+  // Show popup with feedback message
+  await showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => AlertDialog(
+      title: Text(
+        feedback['correct'] ? '✅ Correct!' : '❌ Incorrect',
+        style: TextStyle(
+          color: feedback['correct'] ? Colors.green : Colors.red,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      content: Text(
+        feedback['message'],
+        style: const TextStyle(fontSize: 16),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Next'),
+        )
+      ],
+    ),
+  );
+
+  // Move to next question after closing dialog
+  nextQuestion();
+}
 
   void nextQuestion() {
     if (currentQuestion < widget.quiz.questions.length - 1) {
@@ -269,7 +308,49 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          onPressed: _textController.text.isNotEmpty ? nextQuestion : null,
+          onPressed: _textController.text.isNotEmpty
+    ? () async {
+        final userText = _textController.text.trim();
+
+        // Fake AI feedback for subjective
+        final feedback = evaluateQuizAnswers(
+          [
+            {
+              'type': 'subjective',
+              'question': widget.quiz.questions[currentQuestion].question,
+            }
+          ],
+          {0: userText},
+        ).first;
+
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Text(
+              feedback['correct'] ? '✅ Looks Good!' : '💬 Feedback',
+              style: TextStyle(
+                color: feedback['correct'] ? Colors.green : Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              feedback['message'],
+              style: const TextStyle(fontSize: 16),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Next'),
+              ),
+            ],
+          ),
+        );
+
+        nextQuestion();
+      }
+    : null,
+
           child: Text(
             currentQuestion == widget.quiz.questions.length - 1
                 ? "Submit Quiz"
