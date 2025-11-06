@@ -6,7 +6,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 
-// Import the necessary files
 import 'full_pdf_viewer_page.dart';
 import 'tutorialmodel.dart';
 
@@ -55,12 +54,18 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
     _isAsset = path.startsWith('assets/');
     _pathForViewer = path;
 
+    // ✅ VIDEO CONTROLLER FIX (Solution 1)
     if (widget.file.fileType == 'video') {
-      _videoController = _isAsset
-          ? VideoPlayerController.asset(path)
-          : isDownloaded
-          ? VideoPlayerController.file(File(path))
-          : VideoPlayerController.networkUrl(Uri.parse(path));
+      if (_isAsset) {
+        _videoController = VideoPlayerController.asset(path);
+      } else if (isDownloaded) {
+        _videoController = VideoPlayerController.file(File(path));
+      } else {
+        _videoController = VideoPlayerController.network(
+          path,
+          formatHint: VideoFormat.other, // ✅ FIX APPLIED HERE
+        );
+      }
 
       await _videoController!.initialize();
 
@@ -184,27 +189,24 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // ✅ THUMBNAIL REMOVED — REPLACED WITH FILE TYPE ICON
-            Container(
-              width: double.infinity,
-              height: 180,
-              decoration: BoxDecoration(
-                color: Colors.teal.shade50,
-                borderRadius: BorderRadius.circular(12),
-              ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
               child: Icon(
-                file.fileType == 'pdf'
-                    ? Icons.picture_as_pdf_rounded
-                    : Icons.video_library_rounded,
-                size: 90,
-                color: Colors.teal.shade700,
+                widget.file.fileType == 'pdf'
+                    ? Icons
+                          .picture_as_pdf_rounded // PDF icon
+                    : Icons.play_circle_fill_rounded, // Video icon
+                color: widget.file.fileType == 'pdf'
+                    ? Colors.redAccent
+                    : Colors.teal,
+                size: 120,
               ),
             ),
 
             const SizedBox(height: 20),
 
             Text(
-              file.description,
+              file.description ?? "No description available for this material.",
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 15,
@@ -309,8 +311,6 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
                 ),
                 onPressed: (isDownloaded || !isPdf) ? null : _downloadFile,
               ),
-
-            const SizedBox(height: 20),
 
             if (isDownloaded && localFilePath != null)
               ElevatedButton.icon(
