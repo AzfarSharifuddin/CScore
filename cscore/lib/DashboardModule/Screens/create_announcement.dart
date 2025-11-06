@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CreateAnnouncementPage extends StatefulWidget {
   const CreateAnnouncementPage({super.key});
@@ -27,6 +28,32 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
     }
   }
 
+  Future<void> _submitAnnouncement() async {
+    String title = _titleController.text.trim();
+    String desc = _descriptionController.text.trim();
+
+    if (title.isEmpty || desc.isEmpty || _selectedDate == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+      return;
+    }
+
+    await FirebaseFirestore.instance.collection('Announcements').add({
+      'Title': title,
+      'Description': desc,
+      'Date':
+          "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
+      'createdAt': Timestamp.now(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Announcement Created Successfully")),
+    );
+
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,7 +78,10 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
 
             const SizedBox(height: 16),
 
-            const Text("Description", style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              "Description",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             TextField(
               controller: _descriptionController,
               maxLines: 5,
@@ -67,7 +97,10 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
             GestureDetector(
               onTap: _pickDate,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(6),
@@ -86,12 +119,7 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // will add Firestore saving soon
-                  print("TITLE: ${_titleController.text}");
-                  print("DESC: ${_descriptionController.text}");
-                  print("DATE: $_selectedDate");
-                },
+                onPressed: _submitAnnouncement,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   backgroundColor: Colors.blue,
