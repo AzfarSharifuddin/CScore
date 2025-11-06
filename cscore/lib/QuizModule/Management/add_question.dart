@@ -27,7 +27,13 @@ class _AddQuestionsPageState extends State<AddQuestionsPage> {
     super.initState();
     questions = List.generate(
       widget.numQuestions,
-      (index) => QuestionModel(type: "objective", question: "", options: [], answer: 0),
+      (index) => QuestionModel(
+        type: "objective",
+        question: "",
+        options: [],
+        answer: 0,
+        expectedAnswer: "",
+      ),
     );
   }
 
@@ -42,9 +48,7 @@ class _AddQuestionsPageState extends State<AddQuestionsPage> {
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: widget.numQuestions,
-        itemBuilder: (context, index) {
-          return buildQuestionCard(index);
-        },
+        itemBuilder: (context, index) => buildQuestionCard(index),
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: mainColor,
@@ -54,7 +58,6 @@ class _AddQuestionsPageState extends State<AddQuestionsPage> {
     );
   }
 
-  // CARD FOR EACH QUESTION
   Widget buildQuestionCard(int index) {
     final question = questions[index];
 
@@ -66,12 +69,9 @@ class _AddQuestionsPageState extends State<AddQuestionsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("Question ${index + 1}",
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
 
-            // Question Type Selector
             DropdownButton<String>(
               value: question.type,
               onChanged: (v) {
@@ -81,18 +81,18 @@ class _AddQuestionsPageState extends State<AddQuestionsPage> {
                     question: question.question,
                     options: v == "objective" ? [] : null,
                     answer: v == "objective" ? 0 : null,
+                    expectedAnswer: "",
                   );
                 });
               },
               items: const [
-                DropdownMenuItem(
-                    value: "objective", child: Text("Multiple Choice")),
-                DropdownMenuItem(
-                    value: "subjective", child: Text("Subjective")),
+                DropdownMenuItem(value: "objective", child: Text("Multiple Choice")),
+                DropdownMenuItem(value: "subjective", child: Text("Subjective")),
               ],
             ),
 
-            // Question Text
+            const SizedBox(height: 10),
+
             TextField(
               decoration: const InputDecoration(labelText: "Question Text"),
               onChanged: (v) {
@@ -101,6 +101,7 @@ class _AddQuestionsPageState extends State<AddQuestionsPage> {
                   question: v,
                   options: question.options,
                   answer: question.answer,
+                  expectedAnswer: question.expectedAnswer,
                 );
               },
             ),
@@ -108,13 +109,13 @@ class _AddQuestionsPageState extends State<AddQuestionsPage> {
             const SizedBox(height: 10),
 
             if (question.type == "objective") buildMCQSection(index),
+            if (question.type == "subjective") buildSubjectiveSection(index),
           ],
         ),
       ),
     );
   }
 
-  // MCQ BUILDER SECTION
   Widget buildMCQSection(int index) {
     final question = questions[index];
     final options = question.options ?? [];
@@ -122,18 +123,15 @@ class _AddQuestionsPageState extends State<AddQuestionsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Options:",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        const Text("Options:", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
 
-        // List of options
         ...List.generate(options.length, (i) {
           return Row(
             children: [
               Expanded(
                 child: TextField(
-                  decoration:
-                      InputDecoration(labelText: "Option ${i + 1}"),
+                  decoration: InputDecoration(labelText: "Option ${i + 1}"),
                   onChanged: (v) {
                     options[i] = v;
                   },
@@ -149,6 +147,7 @@ class _AddQuestionsPageState extends State<AddQuestionsPage> {
                       question: question.question,
                       options: options,
                       answer: i,
+                      expectedAnswer: "",
                     );
                   });
                 },
@@ -157,7 +156,6 @@ class _AddQuestionsPageState extends State<AddQuestionsPage> {
           );
         }),
 
-        // Add option button
         TextButton(
           child: const Text("Add Option"),
           onPressed: () {
@@ -168,27 +166,56 @@ class _AddQuestionsPageState extends State<AddQuestionsPage> {
                 question: question.question,
                 options: options,
                 answer: question.answer,
+                expectedAnswer: "",
               );
             });
           },
-        )
+        ),
       ],
     );
   }
 
-  // SUBMIT QUESTIONS TO FIRESTORE
+  Widget buildSubjectiveSection(int index) {
+    final question = questions[index];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Expected Answer (for AI marking):",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        TextField(
+          decoration: const InputDecoration(
+            labelText: "Expected Answer (Teacher’s Answer)",
+          ),
+          maxLines: 3,
+          onChanged: (v) {
+            questions[index] = QuestionModel(
+              type: "subjective",
+              question: question.question,
+              options: null,
+              answer: null,
+              expectedAnswer: v,
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   void saveQuiz() async {
-    final success =
-        await QuizService().addQuestionsToQuiz(widget.quizId, questions);
+    final success = await QuizService().addQuestionsToQuiz(widget.quizId, questions);
 
     if (success) {
       Navigator.pushReplacement(
-  context,
-  MaterialPageRoute(
-    builder: (_) => QuizSuccessPage(title: "Quiz Created"),
-  ),
-);
-
+        context,
+        MaterialPageRoute(
+          builder: (_) => const QuizSuccessPage(title: "Quiz Created"),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to save quiz. Please try again.")),
+      );
     }
   }
 }

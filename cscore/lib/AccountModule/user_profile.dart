@@ -26,39 +26,40 @@ class _UserProfileState extends State<UserProfile> {
       ),
       body: Text('User'),
       bottomNavigationBar: BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            currentIndex: 2,
-            selectedItemColor: Colors.blue,
-            unselectedItemColor: Colors.black,
-            onTap: (index){
-              if(index == 0){
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ViewProgressScreen()),);
-              }
-              else if(index == 1){
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Dashboard()),);
-              }
-
-            },
-            items: const[
-                BottomNavigationBarItem(
-                    
-                    icon: Icon(Icons.track_changes),
-                    label: '', 
-                    
-                ),
-                BottomNavigationBarItem(
-      
-                    icon: Icon(Icons.home),
-                    label: '', 
-                ),
-                BottomNavigationBarItem(
-                    
-                    icon: Icon(Icons.person),
-                    label: '',
-                ),
-                
-            ],
-        ),
+        type: BottomNavigationBarType.fixed,
+        currentIndex: 2, // Stays at 1 for the 'Home' screen
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.black,
+        onTap: (index) {
+          if (index == 0) {
+            // FIXED: Use 'push' to allow user to go back
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ViewProgressScreen()),
+            );
+          } /*else if (index == 1) {
+             // FIXED: Enabled this navigation and used 'push'
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const UserProfile()),
+            );
+          } will fix later 7/11/25*/
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.track_changes),
+            label: 'Progress', // FIXED: Added label
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home', // FIXED: Added label
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile', // FIXED: Added label
+          ),
+        ],
+      ),
     );
   }
 }

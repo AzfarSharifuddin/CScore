@@ -40,9 +40,9 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
               buildTextField("Title", (v) => title = v!),
               buildTextField("Description", (v) => description = v!),
               buildTextField("Category", (v) => category = v!),
+
               const SizedBox(height: 10),
 
-              // Difficulty Dropdown
               DropdownButtonFormField<String>(
                 value: difficulty,
                 decoration: const InputDecoration(labelText: "Difficulty"),
@@ -54,26 +54,22 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
 
               const SizedBox(height: 10),
 
-              // Duration
               TextFormField(
                 decoration: const InputDecoration(labelText: "Duration (minutes)"),
                 keyboardType: TextInputType.number,
-                onChanged: (v) => duration = int.parse(v),
+                onChanged: (v) => duration = int.tryParse(v) ?? 10,
               ),
 
               const SizedBox(height: 10),
 
-              // Number of Questions
               TextFormField(
-                decoration:
-                    const InputDecoration(labelText: "Number of Questions"),
+                decoration: const InputDecoration(labelText: "Number of Questions"),
                 keyboardType: TextInputType.number,
-                onChanged: (v) => numQuestions = int.parse(v),
+                onChanged: (v) => numQuestions = int.tryParse(v) ?? 1,
               ),
 
               const SizedBox(height: 10),
 
-              // Deadline picker
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: mainColor),
                 onPressed: () async {
@@ -105,7 +101,8 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
                   if (!_formKey.currentState!.validate()) return;
                   if (deadline == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Please select deadline.")));
+                      const SnackBar(content: Text("Please select deadline.")),
+                    );
                     return;
                   }
 
@@ -131,7 +128,10 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
                     );
                   }
                 },
-                child: const Text("Continue"),
+                child: const Text(
+                  "Continue",
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -140,7 +140,6 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
     );
   }
 
-  // Simple field builder
   Widget buildTextField(String label, Function(String?) onSaved) {
     return TextFormField(
       decoration: InputDecoration(labelText: label),

@@ -31,7 +31,7 @@ class QuizModel {
     required this.questions,
   });
 
-  /// ✅ Convert Firestore → Dart Model
+  /// ✅ Firestore → Dart Model
   factory QuizModel.fromDocument(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
@@ -54,7 +54,7 @@ class QuizModel {
     );
   }
 
-  /// ✅ Convert Dart Model → Firestore map
+  /// ✅ Dart → Firestore Map
   Map<String, dynamic> toMap() {
     return {
       'title': title,
@@ -82,12 +82,14 @@ class QuestionModel {
   final String question;
   final List<String>? options; // only for objective
   final int? answer; // only for objective
+  final String? expectedAnswer; // ✅ for subjective
 
   QuestionModel({
     required this.type,
     required this.question,
     this.options,
     this.answer,
+    this.expectedAnswer,
   });
 
   /// Firestore → Dart
@@ -95,10 +97,10 @@ class QuestionModel {
     return QuestionModel(
       type: map['type'] ?? 'objective',
       question: map['question'] ?? '',
-      options: map['options'] != null
-          ? List<String>.from(map['options'])
-          : null,
+      options:
+          map['options'] != null ? List<String>.from(map['options']) : null,
       answer: map['answer'],
+      expectedAnswer: map['expectedAnswer'], // ✅ support AI marking
     );
   }
 
@@ -109,6 +111,8 @@ class QuestionModel {
       'question': question,
       if (options != null) 'options': options,
       if (answer != null) 'answer': answer,
+      if (expectedAnswer != null && expectedAnswer!.isNotEmpty)
+        'expectedAnswer': expectedAnswer,
     };
   }
 }

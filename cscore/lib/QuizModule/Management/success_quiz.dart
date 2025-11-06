@@ -20,17 +20,9 @@ class QuizSuccessPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 30),
-
-              // ✅ Success Icon
-              Icon(
-                Icons.check_circle_rounded,
-                color: mainColor,
-                size: 120,
-              ),
-
+              const Icon(Icons.check_circle_rounded, color: mainColor, size: 120),
               const SizedBox(height: 30),
 
-              // ✅ Main Title
               const Text(
                 "Quiz Created Successfully!",
                 textAlign: TextAlign.center,
@@ -43,7 +35,6 @@ class QuizSuccessPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ✅ Subtitle
               Text(
                 title,
                 textAlign: TextAlign.center,
@@ -55,7 +46,6 @@ class QuizSuccessPage extends StatelessWidget {
               ),
 
               const SizedBox(height: 40),
-
               const Text(
                 "You can now manage this quiz or create another one.",
                 textAlign: TextAlign.center,
@@ -64,7 +54,6 @@ class QuizSuccessPage extends StatelessWidget {
 
               const Spacer(),
 
-              // ✅ Back to Manage Quizzes
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -78,25 +67,19 @@ class QuizSuccessPage extends StatelessWidget {
                   onPressed: () {
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const ManageQuizzesPage()),
+                      MaterialPageRoute(builder: (_) => const ManageQuizzesPage()),
                       (route) => false,
                     );
                   },
                   child: const Text(
                     "Back to Manage Quizzes",
-                    style: TextStyle(
-                      fontSize: 18, 
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // ✅ Back to Dashboard
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
@@ -124,7 +107,6 @@ class QuizSuccessPage extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: 40),
             ],
           ),

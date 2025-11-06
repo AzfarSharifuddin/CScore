@@ -42,17 +42,17 @@ class QuizService {
         'createdBy': user.uid,
         'createdAt': Timestamp.now(),
         'status': 'Not Attempted',
-        'questions': [], // will be filled later in add_questions.dart
+        'questions': [], // will be filled later
       });
 
-      return quizRef.id; // Return quiz ID for next step
+      return quizRef.id;
     } catch (e) {
       print("❌ Error creating quiz metadata: $e");
       return null;
     }
   }
 
-  /// ✅ Add questions to an existing quiz document
+  /// ✅ Add questions (supports expectedAnswer)
   Future<bool> addQuestionsToQuiz(
       String quizId, List<QuestionModel> questions) async {
     try {
@@ -66,14 +66,14 @@ class QuizService {
     }
   }
 
-  /// ✅ Fetch ALL quizzes (Student Side)
+  /// ✅ Fetch all quizzes (student side)
   Stream<List<QuizModel>> fetchAllQuizzes() {
     return _db.collection('quizzes').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) => QuizModel.fromDocument(doc)).toList();
     });
   }
 
-  /// ✅ Fetch quizzes created by current teacher
+  /// ✅ Fetch quizzes created by the current teacher
   Stream<List<QuizModel>> fetchTeacherQuizzes() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const Stream.empty();
@@ -82,12 +82,11 @@ class QuizService {
         .collection('quizzes')
         .where('createdBy', isEqualTo: user.uid)
         .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) => QuizModel.fromDocument(doc)).toList();
-    });
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => QuizModel.fromDocument(doc)).toList());
   }
 
-  /// ✅ Fetch a single quiz by ID
+  /// ✅ Fetch single quiz
   Future<QuizModel?> fetchQuizById(String quizId) async {
     try {
       final doc = await _db.collection('quizzes').doc(quizId).get();
@@ -99,7 +98,7 @@ class QuizService {
     }
   }
 
-  /// ✅ Delete a quiz (for future sprint)
+  /// ✅ Delete a quiz
   Future<bool> deleteQuiz(String quizId) async {
     try {
       await _db.collection('quizzes').doc(quizId).delete();
@@ -110,7 +109,7 @@ class QuizService {
     }
   }
 
-  /// ✅ Update quiz metadata (future sprint)
+  /// ✅ Update quiz (future sprint)
   Future<bool> updateQuiz(String quizId, Map<String, dynamic> updated) async {
     try {
       await _db.collection('quizzes').doc(quizId).update(updated);
