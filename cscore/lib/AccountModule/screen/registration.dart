@@ -1,5 +1,11 @@
+// Updated registration.dart with name field required
+
 import 'package:flutter/material.dart';
 import 'package:cscore/AccountModule//screen/login.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -13,36 +19,73 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
 
   String _selectedRole = 'Student';
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
 
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  String _sha256(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2)); // simulate network delay
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Registration submitted! Waiting for admin approval as $_selectedRole.',
-        ),
-        backgroundColor: Colors.green,
-      ),
-    );
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final name = _nameController.text.trim();
 
-    setState(() => _isLoading = false);
-
-    // Redirect back to login after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginPage()),
+    try {
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
-    });
+      final uid = userCredential.user!.uid;
+
+      final userDoc = {
+        'email': email,
+        'role': _selectedRole,
+        'status': 'Pending',
+        'name': name,
+        'passwordHash': _sha256(password),
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore.collection('users').doc(uid).set(userDoc);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registration submitted! Waiting for admin approval as $_selectedRole.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      setState(() => _isLoading = false);
+
+      Future.delayed(const Duration(seconds: 5), () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
+      });
+    } on FirebaseAuthException catch (e) {
+      setState(() => _isLoading = false);
+      String msg = 'Registration failed';
+      if (e.code == 'email-already-in-use') msg = 'Email already in use.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
   }
 
   @override
@@ -71,6 +114,25 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
               const SizedBox(height: 25),
+
+              // Name field
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.person_outline),
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your full name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
 
               // Email field
               TextFormField(
@@ -124,7 +186,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 20),
 
-              // Confirm password field
+              // Confirm password
               TextFormField(
                 controller: _confirmController,
                 obscureText: _obscureConfirm,

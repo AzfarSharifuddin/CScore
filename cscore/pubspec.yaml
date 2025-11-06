@@ -45,6 +45,8 @@ dependencies:
   flutter_cache_manager: ^3.3.2 # Optional caching for thumbnails
   cloud_firestore: ^6.1.0
   firebase_auth: ^6.1.2
+  crypto: ^3.0.0
+
 
 dev_dependencies:
   flutter_test:
@@ -97,3 +99,5 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+

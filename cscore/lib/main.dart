@@ -9,7 +9,7 @@ import 'package:cscore/QuizModule/Student/quiz.dart';
 import 'package:cscore/AccountModule/screen/login.dart';
 import 'package:cscore/AccountModule/screen/registration.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -17,7 +17,7 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await FirebaseAuth.instance.signInAnonymously();
-
+FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
 
   runApp(const CScoreApp());
 }

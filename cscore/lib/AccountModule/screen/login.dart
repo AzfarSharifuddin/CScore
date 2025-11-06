@@ -1,8 +1,11 @@
+import 'package:cscore/DashboardModule/Screens/admin_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:cscore/DashboardModule/dashboard.dart';
 import 'package:cscore/DashboardModule/Screens/teacher_dashboard.dart';
 import 'package:cscore/DashboardModule/Screens/student_dashboard.dart';
 import 'registration.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,66 +22,101 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  // Dummy credentials for demo
-  final Map<String, Map<String, String>> _users = {
-    'student': {
-      'email': 'student@example.com',
-      'password': '123456',
-    },
-    'teacher': {
-      'email': 'teacher@example.com',
-      'password': '654321',
-    },
-    'admin': {
-      'email': 'admin@example.com',
-      'password': 'admin123',
-    },
-  };
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Simulate login process
+  // ✅ NEW LOGIN FUNCTION (FULL VERSION)
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    await Future.delayed(const Duration(seconds: 2)); // simulate delay
-
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    String? userRole;
+    try {
+      // 1) Firebase Auth Sign In
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-    // Check which role matches the entered credentials
-    _users.forEach((role, creds) {
-      if (creds['email'] == email && creds['password'] == password) {
-        userRole = role;
+      final uid = userCredential.user!.uid;
+
+      // 2) Get user document
+      final doc = await _firestore.collection('users').doc(uid).get();
+
+      if (!doc.exists) {
+        await _auth.signOut();
+        setState(() => _isLoading = false);
+
+        _showError("No user profile found. Contact admin.");
+        return;
       }
-    });
 
-    setState(() => _isLoading = false);
+      final data = doc.data()!;
+      final status = (data["status"] ?? "Pending") as String;
+      final role = (data["role"] ?? "Student") as String;
 
-    if (userRole != null) {
+      // 3) Status Check
+      if (status == "Pending") {
+        await _auth.signOut();
+        setState(() => _isLoading = false);
+        _showError("Your account is still waiting for admin approval.");
+        return;
+      }
+
+      if (status == "Suspended") {
+        await _auth.signOut();
+        setState(() => _isLoading = false);
+        _showError("Your account has been suspended.");
+        return;
+      }
+
+      // ✅ 4) ROUTE BY ROLE
       Widget nextPage;
-      if (userRole == 'student') {
+      if (role.toLowerCase() == "student") {
         nextPage = const StudentDashboard();
-      } else {
-        // teacher or admin
+      } else if (role.toLowerCase() == "teacher") {
         nextPage = const TeacherDashboard();
+      } else if (role.toLowerCase() == "admin") {
+        nextPage = const AdminDashboard(); // Admin dashboard
+      } else {
+        nextPage = const Dashboard();
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Welcome $userRole!')),
+        SnackBar(content: Text("Welcome $role!")),
       );
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => nextPage),
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid email or password')),
-      );
+    } on FirebaseAuthException catch (e) {
+      setState(() => _isLoading = false);
+
+      if (e.code == 'user-not-found') {
+        _showError("No user found with that email.");
+      } else if (e.code == 'wrong-password') {
+        _showError("Incorrect password.");
+      } else {
+        _showError("Login failed: ${e.message}");
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showError("Unexpected error: $e");
     }
+  }
+
+  // ✅ Error Snackbar Function
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
