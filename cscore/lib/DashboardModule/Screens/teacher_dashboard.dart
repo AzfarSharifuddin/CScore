@@ -3,6 +3,7 @@ import '../Services/Firestore_services.dart';
 import '../Widgets/Announcement_card.dart';
 import '../Widgets/Materials_card.dart';
 import '../Widgets/Activity_card.dart';
+import '../Screens/create_announcement.dart'; // ✅ Import Create Announcement Page
 
 class TeacherDashboard extends StatelessWidget {
   const TeacherDashboard({super.key});
@@ -26,26 +27,32 @@ class TeacherDashboard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            /// --- UPDATED BUTTONS (NOW LOOK LIKE CARDS) ---
+            /// --- CUSTOM BUTTON CARDS ---
             Row(
               children: [
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      // TODO: Navigate to Create Announcement Page
+                      // ✅ Navigate to Create Announcement Page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CreateAnnouncementPage(),
+                        ),
+                      );
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],  // Slightly darker
+                        color: Colors.grey[300], // Slightly darker card
                         borderRadius: BorderRadius.circular(12),
                       ),
                       alignment: Alignment.center,
                       child: const Text(
                         "New Announcement",
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold, // Same as "Class: Programming"
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -60,15 +67,15 @@ class TeacherDashboard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: Colors.grey[300], // Same box color
+                        color: Colors.grey[300],
                         borderRadius: BorderRadius.circular(12),
                       ),
                       alignment: Alignment.center,
                       child: const Text(
                         "Manage Activities",
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold, // Same font style
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -77,7 +84,7 @@ class TeacherDashboard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            /// -------------------------------------------------
+            /// ----------------------------------------
 
             const Text(
               'Class: Programming',
