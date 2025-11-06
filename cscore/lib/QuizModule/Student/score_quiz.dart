@@ -58,7 +58,7 @@ class ScoreQuizPage extends StatelessWidget {
                     color: Colors.black87),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 230),
 
               // ✅ Circular Progress Indicator
               Center(
