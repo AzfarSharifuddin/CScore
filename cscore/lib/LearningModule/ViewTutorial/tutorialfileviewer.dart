@@ -19,19 +19,14 @@ class TutorialFileViewer extends StatefulWidget {
 }
 
 class _TutorialFileViewerState extends State<TutorialFileViewer> {
-  // --- File/Download State ---
   bool isDownloaded = false;
   bool isDownloading = false;
   double downloadProgress = 0.0;
   String? localFilePath;
 
-  // --- PDF Navigation State (The key fields for the fix) ---
-  // We use these fields to pass the necessary info to FullPdfViewerPage
   String _pathForViewer = '';
   bool _isAsset = false;
 
-  // --- Video Controllers ---
-  // PDF Controller is now REMOVED to prevent caching/disposal issues.
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
 
@@ -43,7 +38,6 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
 
   @override
   void dispose() {
-    // Only dispose the video controllers
     _videoController?.dispose();
     _chewieController?.dispose();
     super.dispose();
@@ -57,14 +51,10 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
       localFilePath = file.path;
     }
 
-    // Determine the final path and if it's an asset or not
     final path = localFilePath ?? widget.file.fileUrl;
     _isAsset = path.startsWith('assets/');
-    _pathForViewer = path; // Save the path to pass on navigation
+    _pathForViewer = path;
 
-    // ❌ REMOVED: All PDF controller initialization logic. FullPdfViewerPage handles this now.
-
-    // 🎬 Video setup (Only relevant if it's a video file)
     if (widget.file.fileType == 'video') {
       _videoController = _isAsset
           ? VideoPlayerController.asset(path)
@@ -137,7 +127,7 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
         isDownloaded = true;
         isDownloading = false;
         localFilePath = savePath;
-        _pathForViewer = savePath; // Update the path for navigation
+        _pathForViewer = savePath;
         _isAsset = false;
       });
 
@@ -153,7 +143,6 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
   }
 
   Widget _buildFileViewer() {
-    // 🎬 VIDEO VIEWER (Only Video remains embedded)
     if (widget.file.fileType == 'video') {
       if (_chewieController == null) {
         return const Center(child: CircularProgressIndicator());
@@ -191,31 +180,31 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
         elevation: 2,
       ),
       body: SingleChildScrollView(
-        // Retain the physics fix for general use
         physics: const AlwaysScrollableScrollPhysics(),
-
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // 🖼️ Thumbnail
-            Hero(
-              tag: file.fileName,
-              child: ClipRRect(
+            // ✅ THUMBNAIL REMOVED — REPLACED WITH FILE TYPE ICON
+            Container(
+              width: double.infinity,
+              height: 180,
+              decoration: BoxDecoration(
+                color: Colors.teal.shade50,
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  file.thumbnailUrl,
-                  width: double.infinity,
-                  height: 180,
-                  fit: BoxFit.cover,
-                ),
+              ),
+              child: Icon(
+                file.fileType == 'pdf'
+                    ? Icons.picture_as_pdf_rounded
+                    : Icons.video_library_rounded,
+                size: 90,
+                color: Colors.teal.shade700,
               ),
             ),
 
             const SizedBox(height: 20),
 
-            // 📝 Description section
             Text(
-              file.description ?? "No description available for this material.",
+              file.description,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 15,
@@ -226,8 +215,8 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
 
             const SizedBox(height: 20),
 
-            _buildFileViewer(), // Shows video or PDF placeholder
-            // 🚀 NEW BUTTON: Open full PDF viewer
+            _buildFileViewer(),
+
             if (isPdf)
               Padding(
                 padding: const EdgeInsets.only(top: 10, bottom: 20),
@@ -243,18 +232,15 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
                     ),
                   ),
                   onPressed: _pathForViewer.isEmpty
-                      ? null // Disable if path hasn't been determined yet
+                      ? null
                       : () {
-                          // ✅ THE FIX: Navigate and pass the file DATA, not the controller object!
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => FullPdfViewerPage(
                                 fileName: file.fileName,
-                                filePathOrUrl:
-                                    _pathForViewer, // The file path or URL
-                                isAsset:
-                                    _isAsset, // Is it an asset or network/local file?
+                                filePathOrUrl: _pathForViewer,
+                                isAsset: _isAsset,
                               ),
                             ),
                           );
@@ -283,7 +269,6 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
 
             const SizedBox(height: 16),
 
-            // ⬇️ Download button logic (unchanged)
             if (isDownloading)
               Column(
                 children: [
@@ -327,7 +312,6 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
 
             const SizedBox(height: 20),
 
-            // 📂 Open file if downloaded (unchanged)
             if (isDownloaded && localFilePath != null)
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
