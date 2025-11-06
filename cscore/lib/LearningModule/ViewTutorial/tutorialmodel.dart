@@ -20,8 +20,7 @@ class Tutorial {
   final String subtopic;
   final List<TutorialFile> files;
 
-  Tutorial({
-    required this.subtopic,
-    required this.files,
-  });
+  Tutorial({required this.subtopic, required this.files});
 }
+
+//he
