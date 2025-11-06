@@ -13,7 +13,6 @@ class ViewQuizPage extends StatelessWidget {
       backgroundColor: Colors.grey[100],
       body: Column(
         children: [
-          // 🖼️ Banner Image with overlay + back button
           Stack(
             children: [
               Image.asset(
@@ -44,26 +43,23 @@ class ViewQuizPage extends StatelessWidget {
                   ),
                 ),
               ),
-              // ✅ Fixed title overflow issue
               Positioned(
                 bottom: 20,
                 left: 20,
-                right: 20, // added constraint for text width
+                right: 20,
                 child: Text(
                   quizData['title'],
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 26, // reduced slightly from 28 for better wrapping
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
                   ),
-                  maxLines: 2, // allows wrapping into 2 lines
-                  overflow: TextOverflow.ellipsis, // adds "..." if too long
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-
-          // 📄 Quiz Details Section
           Expanded(
             child: Container(
               width: double.infinity,
@@ -75,59 +71,41 @@ class ViewQuizPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Category & difficulty row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Chip(
-                        label: Text(
-                          quizData['category'],
-                          style: const TextStyle(color: Colors.white),
-                        ),
+                        label: Text(quizData['category'],
+                            style: const TextStyle(color: Colors.white)),
                         backgroundColor: mainColor,
                       ),
                       Text(
                         quizData['difficulty'],
                         style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: mainColor,
-                        ),
+                            fontWeight: FontWeight.bold, color: mainColor),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-
-                  // Quiz info (time, questions)
-                  const Text(
-                    "20 Questions • 30 Minutes",
-                    style: TextStyle(color: Colors.grey),
-                  ),
+                  const Text("20 Questions • 30 Minutes",
+                      style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 16),
-
-                  // Quiz description
                   Text(
                     quizData['description'],
                     style: const TextStyle(fontSize: 16, height: 1.4),
                   ),
                   const Spacer(),
-
-                  // Start Quiz Button
                   Center(
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.play_arrow, color: Colors.white),
-                      label: const Text(
-                        "Start Quiz",
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
+                      label: const Text("Start Quiz",
+                          style: TextStyle(fontSize: 18, color: Colors.white)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: mainColor,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 50,
-                          vertical: 14,
-                        ),
+                            horizontal: 50, vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () {
                         Navigator.push(

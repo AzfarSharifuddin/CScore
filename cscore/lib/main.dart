@@ -5,7 +5,7 @@ import 'package:cscore/AIModule/ai_chatbox.dart';
 import 'package:cscore/DashboardModule/dashboard.dart';
 import 'package:cscore/ForumModule/forum.dart';
 import 'package:cscore/LearningModule/ViewTutorial/viewtutorial.dart';
-import 'package:cscore/QuizModule/quiz.dart';
+import 'package:cscore/QuizModule/Student/quiz.dart';
 import 'package:cscore/AccountModule/screen/login.dart';
 import 'package:cscore/AccountModule/screen/registration.dart';
 

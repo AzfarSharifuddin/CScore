@@ -1,7 +1,7 @@
 import 'package:cscore/DashboardModule/dashboard.dart';
 import 'package:cscore/ForumModule/forum.dart';
 import 'package:cscore/LearningModule/learning.dart';
-import 'package:cscore/QuizModule/quiz.dart';
+import 'package:cscore/QuizModule/Student/quiz.dart';
 import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 import 'package:flutter/material.dart';
 //tambah 1
