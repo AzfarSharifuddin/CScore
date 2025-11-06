@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Services/Firestore_services.dart';
 import '../Widgets/Announcement_card.dart';
-import '../Widgets/Materials_card.dart';
 import '../Widgets/Activity_card.dart';
 import '../Screens/create_announcement.dart'; // ✅ Import Create Announcement Page
 
@@ -107,13 +106,6 @@ class TeacherDashboard extends StatelessWidget {
             ),
             ...data.getAnnouncements()
                 .map((a) => AnnouncementCard(announcement: a)),
-
-            const SizedBox(height: 20),
-            const Text(
-              'Class Materials',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            ...data.getMaterials().map((m) => MaterialCard(material: m)),
           ],
         ),
       ),
