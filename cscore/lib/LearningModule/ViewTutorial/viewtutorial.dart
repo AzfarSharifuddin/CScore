@@ -17,7 +17,7 @@ class ViewTutorialPage extends StatelessWidget {
             teacherName: 'Cikgu Aisyah',
             description:
                 'Pengenalan struktur asas HTML, termasuk tag, elemen dan atribut penting untuk laman web pertama anda.',
-            thumbnailUrl: 'https://i.imgur.com/x9aQkCz.png',
+            thumbnailUrl: '', // removed use
           ),
           TutorialFile(
             fileName: 'HTML Basics.mp4',
@@ -26,7 +26,7 @@ class ViewTutorialPage extends StatelessWidget {
             teacherName: 'Encik Farid',
             description:
                 'Video interaktif untuk memahami asas HTML dengan contoh visual menarik.',
-            thumbnailUrl: 'https://i.imgur.com/fn9fYKH.png',
+            thumbnailUrl: '',
           ),
         ],
       ),
@@ -40,16 +40,17 @@ class ViewTutorialPage extends StatelessWidget {
             teacherName: 'Pn. Siti',
             description:
                 'Pelajari cara menggayakan laman web anda menggunakan warna, saiz dan layout CSS.',
-            thumbnailUrl: 'https://i.imgur.com/fn9fYKH.png',
+            thumbnailUrl: '',
           ),
           TutorialFile(
             fileName: 'CSS Responsive Design.pdf',
             fileType: 'pdf',
-            fileUrl: 'https://link.springer.com/content/pdf/10.1007/s12369-025-01299-2.pdf',
+            fileUrl:
+                'https://link.springer.com/content/pdf/10.1007/s12369-025-01299-2.pdf',
             teacherName: 'Encik Farid',
             description:
                 'Panduan lengkap untuk menjadikan laman web anda responsif pada semua peranti.',
-            thumbnailUrl: 'https://i.imgur.com/x9aQkCz.png',
+            thumbnailUrl: '',
           ),
         ],
       ),
@@ -63,7 +64,7 @@ class ViewTutorialPage extends StatelessWidget {
             teacherName: 'Encik Farid',
             description:
                 'Pengenalan kepada fungsi JavaScript dengan contoh dinamik dan animasi mudah.',
-            thumbnailUrl: 'https://i.imgur.com/fn9fYKH.png',
+            thumbnailUrl: '',
           ),
           TutorialFile(
             fileName: 'JS Variables.pdf',
@@ -72,11 +73,24 @@ class ViewTutorialPage extends StatelessWidget {
             teacherName: 'Cikgu Aisyah',
             description:
                 'Dokumen PDF interaktif yang menerangkan konsep pemboleh ubah dalam JavaScript.',
-            thumbnailUrl: 'https://i.imgur.com/x9aQkCz.png',
+            thumbnailUrl: '',
           ),
         ],
       ),
     ];
+  }
+
+  IconData _fileIcon(String type) {
+    switch (type) {
+      case 'pdf':
+        return Icons.picture_as_pdf_rounded;
+      case 'video':
+        return Icons.video_library_rounded;
+      case 'doc':
+        return Icons.description_rounded;
+      default:
+        return Icons.insert_drive_file_rounded;
+    }
   }
 
   Color _fileColor(String type) {
@@ -101,10 +115,7 @@ class ViewTutorialPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'View Tutorials',
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         elevation: 1,
@@ -112,7 +123,6 @@ class ViewTutorialPage extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // 🌈 Motivational header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
@@ -122,8 +132,9 @@ class ViewTutorialPage extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius:
-                  const BorderRadius.vertical(bottom: Radius.circular(30)),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(30),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.teal.withOpacity(0.3),
@@ -138,9 +149,10 @@ class ViewTutorialPage extends StatelessWidget {
                 Text(
                   '💡 Let’s Learn Something New Today!',
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 SizedBox(height: 8),
                 Text(
@@ -152,7 +164,6 @@ class ViewTutorialPage extends StatelessWidget {
             ),
           ),
 
-          // 📚 Tutorials List
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -165,13 +176,17 @@ class ViewTutorialPage extends StatelessWidget {
                   elevation: 5,
                   shadowColor: Colors.tealAccent.withOpacity(0.3),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
-                      tilePadding:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      tilePadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       title: Text(
                         tutorial.subtopic,
                         style: const TextStyle(
@@ -179,12 +194,19 @@ class ViewTutorialPage extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      leading: const Icon(Icons.folder_open_rounded,
-                          color: Colors.teal, size: 30),
-                      childrenPadding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      leading: const Icon(
+                        Icons.folder_open_rounded,
+                        color: Colors.teal,
+                        size: 30,
+                      ),
+                      childrenPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       children: tutorial.files.map((file) {
                         final color = _fileColor(file.fileType);
+                        final icon = _fileIcon(file.fileType);
+
                         return AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
                           curve: Curves.easeInOut,
@@ -195,28 +217,10 @@ class ViewTutorialPage extends StatelessWidget {
                           ),
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                            leading: Hero(
-                              tag: file.fileName,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  file.thumbnailUrl,
-                                  width: 60,
-                                  height: 60,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      width: 60,
-                                      height: 60,
-                                      color: Colors.grey[300],
-                                      child: const Icon(Icons.insert_drive_file,
-                                          color: Colors.grey),
-                                    );
-                                  },
-                                ),
-                              ),
+                              horizontal: 12,
+                              vertical: 4,
                             ),
+                            leading: Icon(icon, size: 48, color: Colors.teal),
                             title: Text(
                               file.fileName,
                               style: const TextStyle(
@@ -236,8 +240,11 @@ class ViewTutorialPage extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
-                                color: Colors.grey, size: 18),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: Colors.grey,
+                              size: 18,
+                            ),
                             onTap: () {
                               Navigator.push(
                                 context,
