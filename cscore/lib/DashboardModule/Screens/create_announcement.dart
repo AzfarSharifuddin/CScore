@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // ✅ Add this
 
 class CreateAnnouncementPage extends StatefulWidget {
   const CreateAnnouncementPage({super.key});
@@ -10,6 +12,8 @@ class CreateAnnouncementPage extends StatefulWidget {
 class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _dateController = TextEditingController();
+
   DateTime? _selectedDate;
 
   void _pickDate() async {
@@ -23,8 +27,37 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
+        _dateController.text = "${picked.day}/${picked.month}/${picked.year}";
       });
     }
+  }
+
+  Future<void> _submitAnnouncement() async {
+    String title = _titleController.text.trim();
+    String desc = _descriptionController.text.trim();
+    String date = _dateController.text.trim();
+
+    if (title.isEmpty || desc.isEmpty || date.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+      return;
+    }
+
+    // ✅ Save to Firestore WITH createdBy
+    await FirebaseFirestore.instance.collection('Announcements').add({
+      'Title': title,
+      'Description': desc,
+      'Date': date,
+      'createdAt': Timestamp.now(),
+      'createdBy': FirebaseAuth.instance.currentUser!.uid, // ✅ Added
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Announcement Created Successfully")),
+    );
+
+    Navigator.pop(context); // Go back to dashboard
   }
 
   @override
@@ -51,7 +84,10 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
 
             const SizedBox(height: 16),
 
-            const Text("Description", style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              "Description",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             TextField(
               controller: _descriptionController,
               maxLines: 5,
@@ -64,20 +100,13 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
             const SizedBox(height: 16),
 
             const Text("Date", style: TextStyle(fontWeight: FontWeight.bold)),
-            GestureDetector(
+            TextField(
+              controller: _dateController,
+              readOnly: true,
               onTap: _pickDate,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  _selectedDate == null
-                      ? "Select Date"
-                      : "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
-                  style: const TextStyle(fontSize: 16),
-                ),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: "Select Date",
               ),
             ),
 
@@ -86,12 +115,7 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // will add Firestore saving soon
-                  print("TITLE: ${_titleController.text}");
-                  print("DESC: ${_descriptionController.text}");
-                  print("DATE: $_selectedDate");
-                },
+                onPressed: _submitAnnouncement,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   backgroundColor: Colors.blue,
