@@ -87,7 +87,7 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
                 },
                 child: Text(deadline == null
                     ? "Select Deadline"
-                    : "Deadline: ${DateFormat('dd/MM/yyyy').format(deadline!)}"),
+                    : "Deadline: ${DateFormat('dd/MM/yyyy').format(deadline!)}",style: TextStyle(color: Colors.white),),
               ),
 
               const SizedBox(height: 30),
