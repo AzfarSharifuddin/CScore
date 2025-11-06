@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:cscore/QuizModule/Data/quiz_data.dart';
+import 'package:cscore/QuizModule/Models/quiz_model.dart';
 import 'attempt_quiz.dart';
 
-const mainColor = Color.fromRGBO(0, 70, 67, 1);
+const Color mainColor = Color.fromRGBO(0, 70, 67, 1);
 
 class ViewQuizPage extends StatelessWidget {
-  final Map<String, dynamic> quizData;
-  const ViewQuizPage({super.key, required this.quizData});
+  final QuizModel quiz;
+
+  const ViewQuizPage({super.key, required this.quiz});
 
   @override
   Widget build(BuildContext context) {
-    final DateTime deadline = quizData['deadline'];
-
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: Column(
         children: [
+          // Header Image
           Stack(
             children: [
               Image.asset(
-                quizData['image'],
+                quiz.image,
                 height: 230,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -28,10 +28,7 @@ class ViewQuizPage extends StatelessWidget {
                 height: 230,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Colors.black.withOpacity(0.6),
-                      Colors.transparent
-                    ],
+                    colors: [Colors.black.withOpacity(0.6), Colors.transparent],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                   ),
@@ -53,17 +50,20 @@ class ViewQuizPage extends StatelessWidget {
                 left: 20,
                 right: 20,
                 child: Text(
-                  quizData['title'],
+                  quiz.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
           ),
 
-          // ✅ Details section
+          // Body
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(24),
@@ -74,49 +74,34 @@ class ViewQuizPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Category + difficulty
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Chip(
-                        label: Text(
-                          quizData['category'],
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        backgroundColor: mainColor,
-                      ),
-                      Text(
-                        quizData['difficulty'],
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, color: mainColor),
-                      ),
-                    ],
+                  Chip(
+                    label: Text(quiz.category,
+                        style: const TextStyle(color: Colors.white)),
+                    backgroundColor: mainColor,
                   ),
-
-                  const SizedBox(height: 16),
-
-                  Text("Duration: ${quizData['duration']} minutes",
-                      style: const TextStyle(fontSize: 14)),
-                  const SizedBox(height: 4),
-                  Text("Deadline: ${formatDeadline(deadline)}",
-                      style: const TextStyle(fontSize: 14)),
-
-                  const SizedBox(height: 18),
-
+                  const SizedBox(height: 12),
                   Text(
-                    quizData['description'],
+                    "Difficulty: ${quiz.difficulty}",
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: mainColor),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "Duration: ${quiz.duration} minutes",
+                    style: const TextStyle(color: Colors.black87),
+                  ),
+                  Text(
+                    "Deadline: ${quiz.deadline.day}/${quiz.deadline.month}/${quiz.deadline.year}",
+                    style: const TextStyle(color: Colors.black87),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    quiz.description,
                     style: const TextStyle(fontSize: 16, height: 1.4),
                   ),
-
                   const Spacer(),
-
                   Center(
                     child: ElevatedButton.icon(
-                      icon: const Icon(Icons.play_arrow, color: Colors.white),
-                      label: const Text(
-                        "Start Quiz",
-                        style: TextStyle(color: Colors.white, fontSize: 18),
-                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: mainColor,
                         padding: const EdgeInsets.symmetric(
@@ -124,25 +109,24 @@ class ViewQuizPage extends StatelessWidget {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
+                      icon: const Icon(Icons.play_arrow, color: Colors.white),
+                      label: const Text("Start Quiz",
+                          style:
+                              TextStyle(fontSize: 18, color: Colors.white)),
                       onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => AttemptQuizPage(
-                              title: quizData['title'],
-                              questions: quizData['questions'],
-                              duration: quizData['duration'],
-                              deadline: quizData['deadline'],
-                            ),
+                            builder: (_) => AttemptQuizPage(quiz: quiz),
                           ),
                         );
                       },
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
-          )
+          ),
         ],
       ),
     );
