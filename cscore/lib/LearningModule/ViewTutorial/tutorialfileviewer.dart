@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdfx/pdfx.dart'; 
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 
 // Import the necessary files
 import 'full_pdf_viewer_page.dart';
-import 'tutorialmodel.dart'; 
+import 'tutorialmodel.dart';
 
 class TutorialFileViewer extends StatefulWidget {
   final TutorialFile file;
@@ -70,8 +69,8 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
       _videoController = _isAsset
           ? VideoPlayerController.asset(path)
           : isDownloaded
-              ? VideoPlayerController.file(File(path))
-              : VideoPlayerController.networkUrl(Uri.parse(path));
+          ? VideoPlayerController.file(File(path))
+          : VideoPlayerController.networkUrl(Uri.parse(path));
 
       await _videoController!.initialize();
 
@@ -147,9 +146,9 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
       );
     } catch (e) {
       setState(() => isDownloading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Failed to download file: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('❌ Failed to download file: $e')));
     }
   }
 
@@ -194,7 +193,7 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
       body: SingleChildScrollView(
         // Retain the physics fix for general use
         physics: const AlwaysScrollableScrollPhysics(),
-        
+
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
@@ -228,7 +227,6 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
             const SizedBox(height: 20),
 
             _buildFileViewer(), // Shows video or PDF placeholder
-
             // 🚀 NEW BUTTON: Open full PDF viewer
             if (isPdf)
               Padding(
@@ -236,25 +234,31 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue.shade700,
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 14,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30)),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
-                  onPressed: _pathForViewer.isEmpty 
-                    ? null // Disable if path hasn't been determined yet
-                    : () {
-                    // ✅ THE FIX: Navigate and pass the file DATA, not the controller object!
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => FullPdfViewerPage(
-                          fileName: file.fileName,
-                          filePathOrUrl: _pathForViewer, // The file path or URL
-                          isAsset: _isAsset, // Is it an asset or network/local file?
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: _pathForViewer.isEmpty
+                      ? null // Disable if path hasn't been determined yet
+                      : () {
+                          // ✅ THE FIX: Navigate and pass the file DATA, not the controller object!
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FullPdfViewerPage(
+                                fileName: file.fileName,
+                                filePathOrUrl:
+                                    _pathForViewer, // The file path or URL
+                                isAsset:
+                                    _isAsset, // Is it an asset or network/local file?
+                              ),
+                            ),
+                          );
+                        },
                   icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
                   label: const Text(
                     'Open Full PDF Viewer',
@@ -291,18 +295,20 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
             else
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      isDownloaded ? Colors.green : Colors.teal.shade600,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                  backgroundColor: isDownloaded
+                      ? Colors.green
+                      : Colors.teal.shade600,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 14,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                   elevation: 4,
                 ),
                 icon: Icon(
-                  isDownloaded
-                      ? Icons.download_done
-                      : Icons.download_rounded,
+                  isDownloaded ? Icons.download_done : Icons.download_rounded,
                   color: Colors.white,
                 ),
                 label: Text(
@@ -326,10 +332,13 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 14,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                 ),
                 onPressed: () {
                   OpenFilex.open(localFilePath!);
@@ -338,9 +347,10 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
                 label: const Text(
                   'Open Offline File',
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold),
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
           ],
