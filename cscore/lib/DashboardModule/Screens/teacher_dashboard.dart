@@ -3,7 +3,9 @@ import '../Services/Firestore_services.dart';
 import '../Widgets/Announcement_card.dart';
 import '../Widgets/Activity_card.dart';
 import '../Screens/create_announcement.dart';
-import '../Screens/manage_activities.dart'; // ✅ Added this import
+import '../Screens/manage_activities.dart';
+import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
+import 'package:cscore/AccountModule/user_profile.dart';
 
 class TeacherDashboard extends StatelessWidget {
   const TeacherDashboard({super.key});
@@ -21,13 +23,15 @@ class TeacherDashboard extends StatelessWidget {
         backgroundColor: Colors.grey[200],
         elevation: 0,
       ),
+
+      // MAIN PAGE CONTENT
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            /// --- CUSTOM BUTTON CARDS ---
+            // BUTTONS TOP
             Row(
               children: [
                 Expanded(
@@ -49,10 +53,7 @@ class TeacherDashboard extends StatelessWidget {
                       alignment: Alignment.center,
                       child: const Text(
                         "New Announcement",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -77,10 +78,7 @@ class TeacherDashboard extends StatelessWidget {
                       alignment: Alignment.center,
                       child: const Text(
                         "Manage Activities",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -89,28 +87,58 @@ class TeacherDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            const Text(
-              'Class: Programming',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            const Text('Class: Programming',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            const Text(
-              'Manage Activities',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
+            const Text('Manage Activities',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
 
-            // Activities list
+            // ACTIVITIES LIST
             ...data.getActivities().map((a) => ActivityCard(activity: a)),
 
             const SizedBox(height: 20),
-            const Text(
-              'Announcements',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
+            const Text('Announcements',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
             ...data.getAnnouncements().map((a) => AnnouncementCard(announcement: a)),
           ],
         ),
+      ),
+
+      // ✅ NEW BOTTOM NAVIGATION BAR ADDED
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: 1,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.black,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ViewProgressScreen()),
+            );
+          } else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const UserProfile()),
+            );
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.track_changes),
+            label: 'Progress',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }
