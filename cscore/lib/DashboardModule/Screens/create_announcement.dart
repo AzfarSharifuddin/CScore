@@ -11,6 +11,9 @@ class CreateAnnouncementPage extends StatefulWidget {
 class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _dateController =
+      TextEditingController(); // ✅ New controller
+
   DateTime? _selectedDate;
 
   void _pickDate() async {
@@ -24,6 +27,8 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
+        _dateController.text =
+            "${picked.day}/${picked.month}/${picked.year}"; // ✅ Update text field display
       });
     }
   }
@@ -31,8 +36,9 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
   Future<void> _submitAnnouncement() async {
     String title = _titleController.text.trim();
     String desc = _descriptionController.text.trim();
+    String date = _dateController.text.trim();
 
-    if (title.isEmpty || desc.isEmpty || _selectedDate == null) {
+    if (title.isEmpty || desc.isEmpty || date.isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
@@ -42,8 +48,7 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
     await FirebaseFirestore.instance.collection('Announcements').add({
       'Title': title,
       'Description': desc,
-      'Date':
-          "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
+      'Date': date,
       'createdAt': Timestamp.now(),
     });
 
@@ -51,7 +56,7 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
       const SnackBar(content: Text("Announcement Created Successfully")),
     );
 
-    Navigator.pop(context);
+    Navigator.pop(context); // ✅ Go back to dashboard
   }
 
   @override
@@ -94,23 +99,15 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
             const SizedBox(height: 16),
 
             const Text("Date", style: TextStyle(fontWeight: FontWeight.bold)),
-            GestureDetector(
+
+            // ✅ FIXED DATE PICKER (READ ONLY FIELD)
+            TextField(
+              controller: _dateController,
+              readOnly: true,
               onTap: _pickDate,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  _selectedDate == null
-                      ? "Select Date"
-                      : "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
-                  style: const TextStyle(fontSize: 16),
-                ),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: "Select Date",
               ),
             ),
 
