@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../student/quiz.dart'; // for viewing quizzes
-import 'package:cscore/DashboardModule/Screens/teacher_dashboard.dart'; // adjust this import if your file name differs
+import 'package:cscore/DashboardModule/Screens/teacher_dashboard.dart';
+import 'manage_quiz.dart'; // for manage quiz
 
 const mainColor = Color.fromRGBO(0, 70, 67, 1);
 
@@ -79,7 +79,7 @@ class SuccessQuizPage extends StatelessWidget {
               ),
               onPressed: () => Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (_) => const QuizListPage()),
+                MaterialPageRoute(builder: (_) => const ManageQuizPage()),
                 (route) => false,
               ),
               child: const Text(

@@ -1,220 +1,158 @@
 import 'package:flutter/material.dart';
 import 'package:cscore/QuizModule/Data/quiz_data.dart';
-import 'success_quiz.dart';
+import 'manage_quiz.dart';
 
 const mainColor = Color.fromRGBO(0, 70, 67, 1);
 
-class AddQuestionPage extends StatefulWidget {
-  final Map<String, dynamic> quizInfo;
+class AddQuestionsPage extends StatefulWidget {
+  final String title;
+  final String description;
+  final String difficulty;
+  final int duration;
+  final DateTime deadline;
 
-  const AddQuestionPage({super.key, required this.quizInfo});
+  const AddQuestionsPage({
+    super.key,
+    required this.title,
+    required this.description,
+    required this.difficulty,
+    required this.duration,
+    required this.deadline,
+  });
 
   @override
-  State<AddQuestionPage> createState() => _AddQuestionPageState();
+  State<AddQuestionsPage> createState() => _AddQuestionsPageState();
 }
 
-class _AddQuestionPageState extends State<AddQuestionPage> {
-  final _formKey = GlobalKey<FormState>();
-  int currentQuestion = 1;
-  String questionType = "Objective";
+class _AddQuestionsPageState extends State<AddQuestionsPage> {
+  List<Map<String, dynamic>> questions = [];
 
-  final TextEditingController _questionController = TextEditingController();
-  final List<TextEditingController> _optionControllers =
-      List.generate(4, (_) => TextEditingController());
-  int correctAnswerIndex = 0;
-  final TextEditingController _subjectiveAnswerController =
-      TextEditingController();
+  final qCtrl = TextEditingController();
+  final op1 = TextEditingController();
+  final op2 = TextEditingController();
+  final op3 = TextEditingController();
+  final op4 = TextEditingController();
 
-  final List<Map<String, dynamic>> _questions = [];
+  int correctIndex = 0;
+  bool isObjective = true;
 
-  void _saveQuestion() {
-    if (!_formKey.currentState!.validate()) return;
+  void addQuestion() {
+    if (qCtrl.text.isEmpty) return;
 
-    if (questionType == "Objective") {
-      _questions.add({
+    if (isObjective) {
+      questions.add({
         'type': 'objective',
-        'question': _questionController.text,
-        'options': _optionControllers.map((c) => c.text).toList(),
-        'answer': correctAnswerIndex,
+        'question': qCtrl.text,
+        'options': [op1.text, op2.text, op3.text, op4.text],
+        'answer': correctIndex,
       });
     } else {
-      _questions.add({
+      questions.add({
         'type': 'subjective',
-        'question': _questionController.text,
+        'question': qCtrl.text,
       });
     }
 
-    // Clear input fields for next question
-    _questionController.clear();
-    for (var controller in _optionControllers) {
-      controller.clear();
-    }
-    _subjectiveAnswerController.clear();
+    qCtrl.clear();
+    op1.clear();
+    op2.clear();
+    op3.clear();
+    op4.clear();
 
-    setState(() {
-      currentQuestion++;
-      questionType = "Objective";
-      correctAnswerIndex = 0;
-    });
+    setState(() {});
   }
 
-  void _submitQuiz() {
-    // Combine quiz info + questions
-    final newQuiz = {
-      'title': widget.quizInfo['title'],
-      'category': 'Custom Quiz',
-      'difficulty': widget.quizInfo['difficulty'],
-      'status': 'Not Attempted',
+  void saveQuiz() {
+    sampleQuizzes.add({
+      'title': widget.title,
+      'category': "General",
+      'difficulty': widget.difficulty,
+      'status': "Not Attempted",
       'image': 'assets/quiz_assets/html.jpg',
-      'description': widget.quizInfo['description'],
-      'duration': widget.quizInfo['duration'],
-      'deadline': widget.quizInfo['deadline'],
-      'questions': _questions,
-    };
+      'description': widget.description,
+      'duration': widget.duration,
+      'deadline': widget.deadline,
+      'questions': questions,
+    });
 
-    // Add to shared list
-    sampleQuizzes.add(newQuiz);
-
-    // Navigate to success page
-    Navigator.pushReplacement(
+    Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const SuccessQuizPage()),
+      MaterialPageRoute(builder: (_) => const ManageQuizPage()),
+      (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text("Add Questions"),
         backgroundColor: mainColor,
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Question $currentQuestion of ${widget.quizInfo['numQuestions']}",
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold, color: mainColor),
-              ),
-              const SizedBox(height: 20),
-
-              // Question Type Toggle
-              Row(
-                children: [
-                  const Text("Question Type: ",
-                      style: TextStyle(fontWeight: FontWeight.w600)),
-                  const SizedBox(width: 10),
-                  DropdownButton<String>(
-                    value: questionType,
-                    items: ["Objective", "Subjective"]
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                    onChanged: (val) => setState(() => questionType = val!),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Question Text
-              TextFormField(
-                controller: _questionController,
-                decoration: const InputDecoration(
-                  labelText: "Question",
-                  border: OutlineInputBorder(),
+        child: ListView(
+          children: [
+            Row(
+              children: [
+                ChoiceChip(
+                  label: const Text("Objective"),
+                  selected: isObjective,
+                  onSelected: (_) => setState(() => isObjective = true),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? "Enter a question" : null,
-              ),
-              const SizedBox(height: 20),
-
-              if (questionType == "Objective") ...[
-                const Text("Answer Options:",
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 10),
-
-                // Options + Correct Answer Selector
-                for (int i = 0; i < 4; i++)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      children: [
-                        Radio<int>(
-                          value: i,
-                          groupValue: correctAnswerIndex,
-                          activeColor: mainColor,
-                          onChanged: (val) =>
-                              setState(() => correctAnswerIndex = val!),
-                        ),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _optionControllers[i],
-                            decoration: InputDecoration(
-                              labelText: "Option ${i + 1}",
-                              border: const OutlineInputBorder(),
-                            ),
-                            validator: (value) => value == null || value.isEmpty
-                                ? "Enter option ${i + 1}"
-                                : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-
-              if (questionType == "Subjective") ...[
-                const Text("Short Answer (optional for teacher reference):",
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _subjectiveAnswerController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    hintText: "Enter a sample answer (optional)",
-                    border: OutlineInputBorder(),
-                  ),
+                const SizedBox(width: 10),
+                ChoiceChip(
+                  label: const Text("Subjective"),
+                  selected: !isObjective,
+                  onSelected: (_) => setState(() => isObjective = false),
                 ),
               ],
-              const SizedBox(height: 30),
+            ),
 
-              // Add or Submit Button
-              Center(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: mainColor,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 60, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      if (currentQuestion <
-                          widget.quizInfo['numQuestions']) {
-                        _saveQuestion();
-                      } else {
-                        _saveQuestion();
-                        _submitQuiz();
-                      }
-                    }
-                  },
-                  child: Text(
-                    currentQuestion < widget.quizInfo['numQuestions']
-                        ? "Next Question"
-                        : "Finish & Add Quiz",
-                    style: const TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
+            const SizedBox(height: 20),
+
+            const Text("Question"),
+            TextField(
+              controller: qCtrl,
+              maxLines: 2,
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+            ),
+
+            if (isObjective) ...[
+              const SizedBox(height: 16),
+              const Text("Options"),
+              TextField(controller: op1, decoration: const InputDecoration(hintText: "Option 1")),
+              TextField(controller: op2, decoration: const InputDecoration(hintText: "Option 2")),
+              TextField(controller: op3, decoration: const InputDecoration(hintText: "Option 3")),
+              TextField(controller: op4, decoration: const InputDecoration(hintText: "Option 4")),
+              const SizedBox(height: 10),
+              const Text("Correct Answer Index (0-3)"),
+              TextField(
+                keyboardType: TextInputType.number,
+                onChanged: (v) => correctIndex = int.tryParse(v) ?? 0,
               ),
-              const SizedBox(height: 20),
             ],
-          ),
+
+            const SizedBox(height: 18),
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: mainColor),
+              onPressed: addQuestion,
+              child: const Text("Add Question", style: TextStyle(color: Colors.white)),
+            ),
+
+            const SizedBox(height: 24),
+
+            if (questions.isNotEmpty)
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                onPressed: saveQuiz,
+                child: const Text(
+                  "Save Quiz",
+                  style: TextStyle(color: Colors.white),
+                ),
+              )
+          ],
         ),
       ),
     );

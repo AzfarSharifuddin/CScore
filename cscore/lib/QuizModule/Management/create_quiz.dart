@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cscore/QuizModule/Data/quiz_data.dart';
 import 'add_question.dart';
 
 const mainColor = Color.fromRGBO(0, 70, 67, 1);
@@ -11,173 +12,117 @@ class CreateQuizPage extends StatefulWidget {
 }
 
 class _CreateQuizPageState extends State<CreateQuizPage> {
-  final _formKey = GlobalKey<FormState>();
-
-  // Controllers
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _durationController = TextEditingController();
-  final TextEditingController _numQuestionController = TextEditingController();
+  final titleCtrl = TextEditingController();
+  final descCtrl = TextEditingController();
 
   String difficulty = "Easy";
-  DateTime? selectedDeadline;
-
-  // pick deadline date
-  Future<void> _pickDeadline(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() => selectedDeadline = picked);
-    }
-  }
+  int duration = 10;
+  DateTime? deadline;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Create Quiz", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Create Quiz"),
         backgroundColor: mainColor,
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Quiz Information",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: mainColor)),
-              const SizedBox(height: 20),
-
-              // Quiz Title
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: "Quiz Title",
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? "Please enter a title" : null,
+        child: ListView(
+          children: [
+            const Text("Quiz Title"),
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: "Enter quiz title",
               ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 16),
 
-              // Description
-              TextFormField(
-                controller: _descriptionController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: "Description",
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? "Please enter a description" : null,
+            const Text("Description"),
+            TextField(
+              controller: descCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: "Enter description",
               ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 16),
 
-              // Difficulty
-              DropdownButtonFormField<String>(
-                value: difficulty,
-                decoration: const InputDecoration(
-                  labelText: "Difficulty",
-                  border: OutlineInputBorder(),
-                ),
-                items: ["Easy", "Medium", "Hard"]
-                    .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                    .toList(),
-                onChanged: (value) => setState(() => difficulty = value!),
+            const Text("Difficulty"),
+            DropdownButtonFormField(
+              value: difficulty,
+              items: ["Easy", "Medium", "Hard"]
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (v) => setState(() => difficulty = v!),
+            ),
+            const SizedBox(height: 16),
+
+            const Text("Duration (minutes)"),
+            TextField(
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+              onChanged: (v) => duration = int.tryParse(v) ?? 10,
+            ),
+            const SizedBox(height: 16),
+
+            const Text("Deadline"),
+            OutlinedButton(
+              onPressed: () async {
+                final selected = await showDatePicker(
+                  context: context,
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime(2030),
+                  initialDate: DateTime.now(),
+                );
+
+                if (selected != null) {
+                  setState(() {
+                    deadline = selected;
+                  });
+                }
+              },
+              child: Text(
+                deadline == null
+                    ? "Select Deadline"
+                    : "Deadline: ${formatDeadline(deadline!)}",
               ),
-              const SizedBox(height: 16),
+            ),
 
-              // Duration
-              TextFormField(
-                controller: _durationController,
-                decoration: const InputDecoration(
-                  labelText: "Duration (minutes)",
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value == null || value.isEmpty ? "Enter duration" : null,
-              ),
-              const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-              // Number of Questions
-              TextFormField(
-                controller: _numQuestionController,
-                decoration: const InputDecoration(
-                  labelText: "Number of Questions",
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value == null || value.isEmpty ? "Enter number of questions" : null,
-              ),
-              const SizedBox(height: 16),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: mainColor),
+              onPressed: () {
+                if (titleCtrl.text.isEmpty ||
+                    descCtrl.text.isEmpty ||
+                    deadline == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Fill all fields")),
+                  );
+                  return;
+                }
 
-              // Deadline picker
-              InkWell(
-                onTap: () => _pickDeadline(context),
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: "Deadline",
-                    border: OutlineInputBorder(),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        selectedDeadline == null
-                            ? "Select a deadline"
-                            : "${selectedDeadline!.day}/${selectedDeadline!.month}/${selectedDeadline!.year}",
-                      ),
-                      const Icon(Icons.calendar_today, color: mainColor),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              Center(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: mainColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AddQuestionsPage(
+                      title: titleCtrl.text,
+                      description: descCtrl.text,
+                      difficulty: difficulty,
+                      duration: duration,
+                      deadline: deadline!,
                     ),
                   ),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      final quizInfo = {
-                        'title': _titleController.text,
-                        'description': _descriptionController.text,
-                        'difficulty': difficulty,
-                        'duration': int.tryParse(_durationController.text) ?? 0,
-                        'deadline': selectedDeadline?.toIso8601String(),
-                        'numQuestions': int.tryParse(_numQuestionController.text) ?? 0,
-                      };
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AddQuestionPage(quizInfo: quizInfo),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text(
-                    "Continue",
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
-          ),
+                );
+              },
+              child: const Text("Continue", style: TextStyle(color: Colors.white)),
+            )
+          ],
         ),
       ),
     );

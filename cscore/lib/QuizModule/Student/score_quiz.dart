@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'quiz.dart';
-import 'package:cscore/DashboardModule/Screens/student_dashboard.dart'; // make sure path is correct
+import 'package:cscore/DashboardModule/Screens/student_dashboard.dart';
 
 const mainColor = Color.fromRGBO(0, 70, 67, 1);
 
@@ -9,7 +9,7 @@ class ScoreQuizPage extends StatelessWidget {
   final String title;
   final int score;
   final int total;
-  final List<Map<String, dynamic>> subjectiveAnswers; // unused for now
+  final List<Map<String, dynamic>> subjectiveAnswers;
 
   const ScoreQuizPage({
     super.key,
@@ -23,15 +23,11 @@ class ScoreQuizPage extends StatelessWidget {
   Widget build(BuildContext context) {
     double percentage = (score / total) * 100;
 
-    // 🎯 Dynamic feedback message
-    String message;
-    if (percentage >= 80) {
-      message = "🎉 Excellent Work!";
-    } else if (percentage >= 50) {
-      message = "👏 Good Effort!";
-    } else {
-      message = "💪 Keep Practicing!";
-    }
+    String message = percentage >= 80
+        ? "🎉 Excellent Work!"
+        : percentage >= 50
+            ? "👏 Good Effort!"
+            : "💪 Keep Practicing!";
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -39,45 +35,34 @@ class ScoreQuizPage extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 🏆 Feedback message (top)
               Text(
                 message,
-                textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                   color: mainColor,
                 ),
               ),
-              const SizedBox(height: 40),
 
-              // 🧾 Your Score line
+              const SizedBox(height: 20),
+
               Text(
                 "Your Score: $score / $total",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
 
               const SizedBox(height: 220),
 
-              // 🌀 Circular Meter (percentage only inside)
-              Center(
-                child: CustomPaint(
-                  size: const Size(180, 180),
-                  painter: CircularScorePainter(percentage),
-                  child: Center(
-                    child: Text(
-                      "${percentage.toStringAsFixed(0)}%",
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+              CustomPaint(
+                size: const Size(180, 180),
+                painter: CircularScorePainter(percentage),
+                child: Center(
+                  child: Text(
+                    "${percentage.toStringAsFixed(0)}%",
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -85,69 +70,61 @@ class ScoreQuizPage extends StatelessWidget {
 
               const Spacer(),
 
-              // ✅ Unified button width container
               SizedBox(
                 width: double.infinity,
-                child: Column(
-                  children: [
-                    // Back to Quizzes button
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: mainColor,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 50, vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () => Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const QuizListPage()),
-                        (route) => false,
-                      ),
-                      child: const Text(
-                        "Back to Quizzes",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: mainColor,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-
-                    const SizedBox(height: 16),
-
-                    // Back to Dashboard button (same width)
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: mainColor, width: 2),
-                        backgroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 50, vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () => Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const StudentDashboard()),
-                        (route) => false,
-                      ),
-                      child: const Text(
-                        "Back to Dashboard",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: mainColor,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const QuizListPage()),
+                      (_) => false,
+                    );
+                  },
+                  child: const Text(
+                    "Back to Quizzes",
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 16),
+
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: mainColor, width: 2),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const StudentDashboard()),
+                      (_) => false,
+                    );
+                  },
+                  child: const Text(
+                    "Back to Dashboard",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: mainColor,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -156,7 +133,6 @@ class ScoreQuizPage extends StatelessWidget {
   }
 }
 
-/// 🌀 Custom Circular Progress Painter (solid)
 class CircularScorePainter extends CustomPainter {
   final double percentage;
 
@@ -167,31 +143,28 @@ class CircularScorePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // Base ring
-    final basePaint = Paint()
+    final bg = Paint()
       ..color = Colors.grey.shade300
       ..strokeWidth = 14
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+      ..style = PaintingStyle.stroke;
 
-    // Progress ring (solid color)
-    final progressPaint = Paint()
-      ..color = mainColor
+    final fg = Paint()
+      ..shader = const LinearGradient(
+        colors: [mainColor, Colors.lightGreenAccent],
+      ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..strokeWidth = 14
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+      ..style = PaintingStyle.stroke;
 
-    // Base circle
-    canvas.drawCircle(center, radius, basePaint);
+    canvas.drawCircle(center, radius, bg);
 
-    // Progress arc
-    double sweepAngle = 2 * math.pi * (percentage / 100);
+    double sweep = 2 * math.pi * (percentage / 100);
+
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       -math.pi / 2,
-      sweepAngle,
+      sweep,
       false,
-      progressPaint,
+      fg,
     );
   }
 

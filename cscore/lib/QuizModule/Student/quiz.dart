@@ -12,13 +12,13 @@ class QuizListPage extends StatefulWidget {
 }
 
 class _QuizListPageState extends State<QuizListPage> {
-  final List<Map<String, dynamic>> quizzes = sampleQuizzes;
-
   void markAsAttempted(String title) {
-    setState(() {
-      final index = quizzes.indexWhere((q) => q['title'] == title);
-      if (index != -1) quizzes[index]['status'] = 'Attempted';
-    });
+    final index = sampleQuizzes.indexWhere((q) => q['title'] == title);
+    if (index != -1) {
+      setState(() {
+        sampleQuizzes[index]['status'] = "Attempted";
+      });
+    }
   }
 
   @override
@@ -26,22 +26,25 @@ class _QuizListPageState extends State<QuizListPage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Quizzes', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Quizzes", style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: mainColor,
-        elevation: 0,
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: quizzes.length,
+        itemCount: sampleQuizzes.length,
         itemBuilder: (context, index) {
-          final quiz = quizzes[index];
+          final quiz = sampleQuizzes[index];
+
           return InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () async {
               final result = await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => ViewQuizPage(quizData: quiz)),
+                MaterialPageRoute(
+                  builder: (_) => ViewQuizPage(quizData: quiz),
+                ),
               );
+
               if (result == true) markAsAttempted(quiz['title']);
             },
             child: Container(
@@ -78,11 +81,21 @@ class _QuizListPageState extends State<QuizListPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(quiz['title'],
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
+
                           const SizedBox(height: 6),
                           Text(quiz['category'],
                               style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-                          const SizedBox(height: 10),
+
+                          const SizedBox(height: 8),
+                          Text("Duration: ${quiz['duration']} min",
+                              style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                          Text("Deadline: ${formatDeadline(quiz['deadline'])}",
+                              style: const TextStyle(fontSize: 12, color: Colors.black54)),
+
+                          const SizedBox(height: 8),
+
                           Row(
                             children: [
                               Container(
@@ -94,30 +107,34 @@ class _QuizListPageState extends State<QuizListPage> {
                                 child: Text(
                                   quiz['difficulty'],
                                   style: const TextStyle(
-                                      color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 10),
                               Text(
                                 quiz['status'],
                                 style: TextStyle(
-                                  color: quiz['status'] == 'Attempted'
-                                      ? mainColor
+                                  color: quiz['status'] == "Attempted"
+                                      ? Colors.blue
                                       : Colors.grey[600],
                                   fontStyle: FontStyle.italic,
                                   fontSize: 12,
                                 ),
-                              ),
+                              )
                             ],
-                          ),
+                          )
                         ],
                       ),
                     ),
                   ),
+
                   const Padding(
                     padding: EdgeInsets.only(right: 16),
                     child: Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 18),
-                  ),
+                  )
                 ],
               ),
             ),
