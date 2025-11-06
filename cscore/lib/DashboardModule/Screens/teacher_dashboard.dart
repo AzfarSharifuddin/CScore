@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // ✅ Firestore import
 import '../Services/Firestore_services.dart';
 import '../Widgets/Announcement_card.dart';
 import '../Widgets/Activity_card.dart';
 import '../Screens/create_announcement.dart';
 import '../Screens/manage_activities.dart';
+import '../Models/Announcement.dart'; // ✅ Import Announcement Model
 import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 import 'package:cscore/AccountModule/user_profile.dart';
 
@@ -24,14 +26,12 @@ class TeacherDashboard extends StatelessWidget {
         elevation: 0,
       ),
 
-      // MAIN PAGE CONTENT
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // BUTTONS TOP
+            // TOP BUTTONS
             Row(
               children: [
                 Expanded(
@@ -53,7 +53,10 @@ class TeacherDashboard extends StatelessWidget {
                       alignment: Alignment.center,
                       child: const Text(
                         "New Announcement",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -78,35 +81,77 @@ class TeacherDashboard extends StatelessWidget {
                       alignment: Alignment.center,
                       child: const Text(
                         "Manage Activities",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ],
             ),
+
             const SizedBox(height: 20),
 
-            const Text('Class: Programming',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              'Class: Programming',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
-            const Text('Manage Activities',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            const Text(
+              'Manage Activities',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 12),
 
             // ACTIVITIES LIST
             ...data.getActivities().map((a) => ActivityCard(activity: a)),
 
             const SizedBox(height: 20),
-            const Text('Announcements',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+
+            const Text(
+              'Announcements',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
-            ...data.getAnnouncements().map((a) => AnnouncementCard(announcement: a)),
+
+            // ✅ REAL-TIME ANNOUNCEMENTS FROM FIRESTORE
+            StreamBuilder(
+              stream: FirebaseFirestore.instance
+                  .collection('Announcements')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Text("No announcements yet.");
+                }
+
+                return Column(
+                  children: snapshot.data!.docs.map((doc) {
+                    var data = doc.data() as Map<String, dynamic>;
+
+                    // ✅ Convert Firestore map → Announcement model
+                    Announcement announcement = Announcement(
+                      title: data['Title'],
+                      description: data['Description'],
+                      date: data['Date'],
+                    );
+
+                    return AnnouncementCard(announcement: announcement);
+                  }).toList(),
+                );
+              },
+            ),
           ],
         ),
       ),
 
-      // ✅ NEW BOTTOM NAVIGATION BAR ADDED
+      // BOTTOM NAV BAR
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: 1,
@@ -130,14 +175,8 @@ class TeacherDashboard extends StatelessWidget {
             icon: Icon(Icons.track_changes),
             label: 'Progress',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
