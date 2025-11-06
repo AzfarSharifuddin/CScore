@@ -10,14 +10,27 @@ import 'package:cscore/AccountModule/screen/login.dart';
 import 'package:cscore/AccountModule/screen/registration.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // ✅ Initialize Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Optional: allows students to view materials without logging in (keep as you had it)
   await FirebaseAuth.instance.signInAnonymously();
-FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
+
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
+
+  // ✅ Initialize Supabase (just add your URL + anon key)
+  await Supabase.initialize(
+    url: 'https://pwvboweykmicdgsuxnad.supabase.co', // <-- replace
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3dmJvd2V5a21pY2Rnc3V4bmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTM2OTIsImV4cCI6MjA3ODAyOTY5Mn0.15hL7x_W3SfgdKGVLH-FClF4Msz0eDotf4Uy5llK9MQ', // <-- replace
+  );
 
   runApp(const CScoreApp());
 }
@@ -31,13 +44,11 @@ class CScoreApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'CScore+',
 
-   
       initialRoute: '/',
 
-  
       routes: {
         '/': (context) => const LoginPage(),
-        '/register': (context) => const RegisterPage(), 
+        '/register': (context) => const RegisterPage(),
         '/dashboard': (context) => const Dashboard(),
         '/learning': (context) => const ViewTutorialPage(),
         '/quiz': (context) => const QuizListPage(),
