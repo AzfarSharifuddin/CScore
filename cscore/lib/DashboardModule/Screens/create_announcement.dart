@@ -62,55 +62,128 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
+
       appBar: AppBar(
-        title: const Text("Create Announcement"),
-        backgroundColor: Colors.grey[200],
+        backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+        ),
+        title: const Text(
+          "Create Announcement",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            color: Colors.black87,
+          ),
+        ),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Title", style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text("Title",
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            const SizedBox(height: 6),
+
             TextField(
               controller: _titleController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
                 hintText: "Enter announcement title",
+                hintStyle: TextStyle(color: Colors.grey[500]),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Colors.blue, width: 1.3),
+                ),
               ),
             ),
+
             const SizedBox(height: 16),
-            const Text(
-              "Description",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+
+            const Text("Description",
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            const SizedBox(height: 6),
+
             TextField(
               controller: _descriptionController,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
+              maxLines: 4,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
                 hintText: "Enter description...",
+                hintStyle: TextStyle(color: Colors.grey[500]),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Colors.blue, width: 1.3),
+                ),
               ),
             ),
+
             const SizedBox(height: 16),
-            const Text("Date", style: TextStyle(fontWeight: FontWeight.bold)),
-            TextField(
-              controller: _dateController,
-              readOnly: true,
+
+            const Text("Date",
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            const SizedBox(height: 6),
+
+            GestureDetector(
               onTap: _pickDate,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: "Select Date",
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Text(
+                  _dateController.text.isEmpty
+                      ? "Select Date"
+                      : _dateController.text,
+                  style: TextStyle(
+                      fontSize: 15, color: _dateController.text.isEmpty ? Colors.grey[500] : Colors.black87),
+                ),
               ),
             ),
+
             const SizedBox(height: 30),
+
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _submitAnnouncement,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                child: const Text("Submit"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  elevation: 2,
+                ),
+                child: const Text(
+                  "Submit",
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: Colors.white),
+                ),
               ),
             ),
           ],
