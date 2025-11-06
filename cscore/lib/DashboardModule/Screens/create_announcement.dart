@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // ✅ Add this
 
 class CreateAnnouncementPage extends StatefulWidget {
   const CreateAnnouncementPage({super.key});
@@ -11,8 +12,7 @@ class CreateAnnouncementPage extends StatefulWidget {
 class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _dateController =
-      TextEditingController(); // ✅ New controller
+  final TextEditingController _dateController = TextEditingController();
 
   DateTime? _selectedDate;
 
@@ -27,8 +27,7 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
-        _dateController.text =
-            "${picked.day}/${picked.month}/${picked.year}"; // ✅ Update text field display
+        _dateController.text = "${picked.day}/${picked.month}/${picked.year}";
       });
     }
   }
@@ -45,18 +44,20 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
       return;
     }
 
+    // ✅ Save to Firestore WITH createdBy
     await FirebaseFirestore.instance.collection('Announcements').add({
       'Title': title,
       'Description': desc,
       'Date': date,
       'createdAt': Timestamp.now(),
+      'createdBy': FirebaseAuth.instance.currentUser!.uid, // ✅ Added
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Announcement Created Successfully")),
     );
 
-    Navigator.pop(context); // ✅ Go back to dashboard
+    Navigator.pop(context); // Go back to dashboard
   }
 
   @override
@@ -99,8 +100,6 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
             const SizedBox(height: 16),
 
             const Text("Date", style: TextStyle(fontWeight: FontWeight.bold)),
-
-            // ✅ FIXED DATE PICKER (READ ONLY FIELD)
             TextField(
               controller: _dateController,
               readOnly: true,
