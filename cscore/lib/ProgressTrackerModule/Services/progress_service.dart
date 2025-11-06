@@ -12,14 +12,15 @@ class ProgressService {
         .add(record.toMap());
   }
 
-  Future<void> updateProgress(String userId, ProgressRecord record) async {
-    await _db
-        .collection('progress')
-        .doc(userId)
-        .collection('records')
-        .doc(record.id)
-        .update(record.toMap());
-  }
+    Future<void> updateProgress(String userId, ProgressRecord record) async {
+  await FirebaseFirestore.instance
+      .collection('progress')
+      .doc(userId)
+      .collection('records')
+      .doc(record.id)
+      .update(record.toMap());
+}
+
 
   Future<void> deleteProgress(String userId, String recordId) async {
     await _db
@@ -29,6 +30,7 @@ class ProgressService {
         .doc(recordId)
         .delete();
   }
+
 
   Stream<List<ProgressRecord>> getProgressStream(String userId) {
     return _db

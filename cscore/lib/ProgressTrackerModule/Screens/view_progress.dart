@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cscore/ProgressTrackerModule/Services/progress_service.dart';
 import 'package:cscore/ProgressTrackerModule/Model/progress_record.dart';
 import 'add_progress.dart';
+import 'edit_progress_page.dart'; // ✅ Import your edit page
 
 class ViewProgressScreen extends StatelessWidget {
   final ProgressService _progressService = ProgressService();
@@ -39,7 +40,7 @@ class ViewProgressScreen extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(title: const Text("My Progress")),
-          body: _buildProgressBody(userId),
+          body: _buildProgressBody(context, userId),
           floatingActionButton: FloatingActionButton(
             onPressed: () {
               Navigator.push(
@@ -54,7 +55,7 @@ class ViewProgressScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressBody(String userId) {
+  Widget _buildProgressBody(BuildContext context, String userId) {
     return StreamBuilder<List<ProgressRecord>>(
       stream: _progressService.getProgressStream(userId),
       builder: (context, snapshot) {
@@ -104,6 +105,16 @@ class ViewProgressScreen extends StatelessWidget {
                 onPressed: () =>
                     _progressService.deleteProgress(userId, p.id),
               ),
+
+              // ✅ NEW: Tap to edit
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EditProgressPage(record: p),
+                  ),
+                );
+              },
             );
           },
         );
