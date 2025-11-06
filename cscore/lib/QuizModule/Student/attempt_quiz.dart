@@ -1,22 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:cscore/QuizModule/Models/quiz_model.dart';
 import 'score_quiz.dart';
 
-const mainColor = Color.fromRGBO(0, 70, 67, 1);
+const Color mainColor = Color.fromRGBO(0, 70, 67, 1);
 
 class AttemptQuizPage extends StatefulWidget {
-  final String title;
-  final List<Map<String, dynamic>> questions;
-  final int duration; // ✅ minutes
-  final DateTime deadline; // ✅ DateTime
+  final QuizModel quiz;
 
-  const AttemptQuizPage({
-    super.key,
-    required this.title,
-    required this.questions,
-    required this.duration,
-    required this.deadline,
-  });
+  const AttemptQuizPage({super.key, required this.quiz});
 
   @override
   State<AttemptQuizPage> createState() => _AttemptQuizPageState();
@@ -29,52 +21,53 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
   bool showFeedback = false;
   bool isLocked = false;
 
-  final TextEditingController _textController = TextEditingController();
+  late Timer countdown;
+  int remainingSeconds = 0;
 
-  // ✅ Countdown timer
-  late int remainingSeconds;
-  Timer? timer;
+  final TextEditingController _textController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
 
-    // ✅ duration in minutes → seconds
-    remainingSeconds = widget.duration * 60;
+    // Prepare answer placeholders
+    answers = List<dynamic>.filled(widget.quiz.questions.length, null);
 
+    // Setup duration as seconds
+    remainingSeconds = widget.quiz.duration * 60;
+
+    // Start countdown timer
     startTimer();
-
-    answers = List<dynamic>.filled(widget.questions.length, null);
-  }
-
-  // ✅ Timer with auto-submit when time ends
-  void startTimer() {
-    timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) return;
-
-      setState(() {
-        remainingSeconds--;
-      });
-
-      if (remainingSeconds <= 0) {
-        timer?.cancel();
-        submitQuiz(); // AUTO-SUBMIT
-      }
-    });
   }
 
   @override
   void dispose() {
-    timer?.cancel();
+    countdown.cancel();
+    _textController.dispose();
     super.dispose();
   }
 
-  String formatTime(int seconds) {
-    int mins = seconds ~/ 60;
-    int secs = seconds % 60;
-    return "$mins:${secs.toString().padLeft(2, '0')}";
+  // ✅ Countdown Timer
+  void startTimer() {
+    countdown = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (remainingSeconds <= 0) {
+        submitQuiz(autoSubmit: true);
+        timer.cancel();
+      } else {
+        setState(() {
+          remainingSeconds--;
+        });
+      }
+    });
   }
 
+  String formatTime(int seconds) {
+    int m = seconds ~/ 60;
+    int s = seconds % 60;
+    return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}";
+  }
+
+  // ✅ Handle objective answer tap
   Future<void> handleAnswerTap(int index) async {
     if (isLocked) return;
 
@@ -84,94 +77,88 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
       isLocked = true;
     });
 
-    if (index == widget.questions[currentQuestion]['answer']) {
+    final correctIndex =
+        widget.quiz.questions[currentQuestion].answer ?? -1;
+
+    if (index == correctIndex) {
       score++;
     }
 
     await Future.delayed(const Duration(milliseconds: 1200));
-
     nextQuestion();
   }
 
   void nextQuestion() {
-    if (currentQuestion < widget.questions.length - 1) {
+    if (currentQuestion < widget.quiz.questions.length - 1) {
       setState(() {
         currentQuestion++;
-        _textController.clear();
         showFeedback = false;
         isLocked = false;
+        _textController.clear();
       });
     } else {
       submitQuiz();
     }
   }
 
-  void submitQuiz() {
-    timer?.cancel();
+  // ✅ Submit quiz
+  void submitQuiz({bool autoSubmit = false}) {
+    countdown.cancel();
 
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (_) => ScoreQuizPage(
-          title: widget.title,
+          quiz: widget.quiz,
           score: score,
-          total: widget.questions.length,
-          subjectiveAnswers: getSubjectiveAnswers(),
+          total: widget.quiz.questions.length,
         ),
       ),
     );
   }
 
-  List<Map<String, dynamic>> getSubjectiveAnswers() {
-    final list = <Map<String, dynamic>>[];
-
-    for (int i = 0; i < widget.questions.length; i++) {
-      if (widget.questions[i]['type'] == 'subjective') {
-        list.add({
-          'question': widget.questions[i]['question'],
-          'answer': answers[i] ?? '',
-        });
-      }
-    }
-
-    return list;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final question = widget.questions[currentQuestion];
+    final question = widget.quiz.questions[currentQuestion];
+    final isObjective = question.type == "objective";
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          child: Padding(
+            key: ValueKey(currentQuestion),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ✅ Header: Title + Timer
+                _buildHeader(),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
+                Text(
+                  question.question,
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
 
-              Text(
-                question['question'],
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
+                if (isObjective) ..._buildObjective(question),
+                if (!isObjective) ..._buildSubjective(),
 
-              const SizedBox(height: 20),
+                const Spacer(),
 
-              if (question['type'] == 'objective') ..._buildObjectiveOptions(question),
-              if (question['type'] == 'subjective') ..._buildSubjectiveInput(),
-
-              const Spacer(),
-
-              LinearProgressIndicator(
-                value: (currentQuestion + 1) / widget.questions.length,
-                backgroundColor: Colors.grey[300],
-                color: mainColor,
-                minHeight: 6,
-              ),
-            ],
+                // ✅ Progress bar
+                LinearProgressIndicator(
+                  value: (currentQuestion + 1) / widget.quiz.questions.length,
+                  backgroundColor: Colors.grey[300],
+                  color: mainColor,
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -180,17 +167,14 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
 
   Widget _buildHeader() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // ✅ Title
-        Flexible(
+        Expanded(
           child: Text(
-            widget.title,
+            widget.quiz.title,
             style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: mainColor,
-            ),
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: mainColor),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -199,14 +183,14 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.red.shade100,
+            color: Colors.red.shade50,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
             formatTime(remainingSeconds),
             style: const TextStyle(
-              color: Colors.red,
               fontWeight: FontWeight.bold,
+              color: Colors.red,
             ),
           ),
         ),
@@ -214,73 +198,80 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
     );
   }
 
-  List<Widget> _buildObjectiveOptions(Map<String, dynamic> question) {
-    return List.generate(question['options'].length, (index) {
+  // ✅ Objective Question UI
+  List<Widget> _buildObjective(QuestionModel question) {
+    return List.generate(question.options!.length, (index) {
       final isSelected = answers[currentQuestion] == index;
-      final isCorrect = question['answer'] == index;
+      final isCorrect = question.answer == index;
 
-      Color? bgColor;
+      Color? bg;
       if (showFeedback) {
-        if (isCorrect) bgColor = Colors.green.withOpacity(0.2);
-        else if (isSelected) bgColor = Colors.red.withOpacity(0.2);
+        if (isCorrect) bg = Colors.green.withOpacity(0.25);
+        else if (isSelected) bg = Colors.red.withOpacity(0.25);
       } else if (isSelected) {
-        bgColor = Colors.green.withOpacity(0.1);
+        bg = mainColor.withOpacity(0.15);
       }
 
       return AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: bgColor,
+          color: bg,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? Colors.green : Colors.grey.withOpacity(0.4),
+            color: isSelected ? mainColor : Colors.grey.withOpacity(0.4),
           ),
         ),
         child: RadioListTile<int>(
-          title: Text(question['options'][index]),
+          title: Text(
+            question.options![index],
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
           value: index,
           groupValue: answers[currentQuestion],
+          activeColor: mainColor,
           onChanged: (_) => handleAnswerTap(index),
-          activeColor: Colors.green,
         ),
       );
     });
   }
 
-  List<Widget> _buildSubjectiveInput() {
+  // ✅ Subjective Question UI
+  List<Widget> _buildSubjective() {
     return [
-      const Text(
-        "Your Answer:",
-        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-      ),
+      const Text("Your Answer:",
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
       const SizedBox(height: 10),
-
       TextField(
         controller: _textController,
+        maxLines: 4,
         decoration: InputDecoration(
           hintText: "Type your answer here...",
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        maxLines: 4,
-        onChanged: (v) {
-          answers[currentQuestion] = v;
-          setState(() {});
-        },
+        onChanged: (val) => answers[currentQuestion] = val,
       ),
-
       const SizedBox(height: 20),
 
       Align(
         alignment: Alignment.centerRight,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor:
-                _textController.text.isNotEmpty ? mainColor : Colors.grey,
+            backgroundColor: _textController.text.isNotEmpty
+                ? mainColor
+                : Colors.grey,
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           onPressed: _textController.text.isNotEmpty ? nextQuestion : null,
           child: Text(
-            currentQuestion == widget.questions.length - 1
+            currentQuestion == widget.quiz.questions.length - 1
                 ? "Submit Quiz"
                 : "Next Question",
             style: const TextStyle(color: Colors.white),
