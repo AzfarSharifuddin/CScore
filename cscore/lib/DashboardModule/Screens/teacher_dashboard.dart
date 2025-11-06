@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../Services/Firestore_services.dart';
 import '../Widgets/Announcement_card.dart';
 import '../Widgets/Activity_card.dart';
-import '../Screens/create_announcement.dart'; // ✅ Import Create Announcement Page
+import '../Screens/create_announcement.dart';
+import '../Screens/manage_activities.dart'; // ✅ Added this import
 
 class TeacherDashboard extends StatelessWidget {
   const TeacherDashboard({super.key});
@@ -32,7 +33,6 @@ class TeacherDashboard extends StatelessWidget {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      // ✅ Navigate to Create Announcement Page
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -43,7 +43,7 @@ class TeacherDashboard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: Colors.grey[300], // Slightly darker card
+                        color: Colors.grey[300],
                         borderRadius: BorderRadius.circular(12),
                       ),
                       alignment: Alignment.center,
@@ -61,7 +61,12 @@ class TeacherDashboard extends StatelessWidget {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      // TODO: Navigate to Manage Activities Page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ManageActivitiesPage(),
+                        ),
+                      );
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -83,7 +88,6 @@ class TeacherDashboard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            /// ----------------------------------------
 
             const Text(
               'Class: Programming',
@@ -96,7 +100,7 @@ class TeacherDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Activities
+            // Activities list
             ...data.getActivities().map((a) => ActivityCard(activity: a)),
 
             const SizedBox(height: 20),
@@ -104,8 +108,7 @@ class TeacherDashboard extends StatelessWidget {
               'Announcements',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-            ...data.getAnnouncements()
-                .map((a) => AnnouncementCard(announcement: a)),
+            ...data.getAnnouncements().map((a) => AnnouncementCard(announcement: a)),
           ],
         ),
       ),
