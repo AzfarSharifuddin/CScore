@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // ✅ Add this
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CreateAnnouncementPage extends StatefulWidget {
   const CreateAnnouncementPage({super.key});
@@ -44,20 +44,19 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
       return;
     }
 
-    // ✅ Save to Firestore WITH createdBy
     await FirebaseFirestore.instance.collection('Announcements').add({
       'Title': title,
       'Description': desc,
       'Date': date,
       'createdAt': Timestamp.now(),
-      'createdBy': FirebaseAuth.instance.currentUser!.uid, // ✅ Added
+      'createdBy': FirebaseAuth.instance.currentUser!.uid,
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Announcement Created Successfully")),
     );
 
-    Navigator.pop(context); // Go back to dashboard
+    Navigator.pop(context);
   }
 
   @override
@@ -81,9 +80,7 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
                 hintText: "Enter announcement title",
               ),
             ),
-
             const SizedBox(height: 16),
-
             const Text(
               "Description",
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -96,9 +93,7 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
                 hintText: "Enter description...",
               ),
             ),
-
             const SizedBox(height: 16),
-
             const Text("Date", style: TextStyle(fontWeight: FontWeight.bold)),
             TextField(
               controller: _dateController,
@@ -109,18 +104,13 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
                 hintText: "Select Date",
               ),
             ),
-
-            const SizedBox(height: 24),
-
+            const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _submitAnnouncement,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: Colors.blue,
-                ),
-                child: const Text("Submit", style: TextStyle(fontSize: 16)),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                child: const Text("Submit"),
               ),
             ),
           ],

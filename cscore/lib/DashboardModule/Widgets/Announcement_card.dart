@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Models/Announcement.dart';
+import '../Screens/announcement_details.dart';
 
 class AnnouncementCard extends StatelessWidget {
   final Announcement announcement;
@@ -9,16 +10,27 @@ class AnnouncementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: Colors.grey[100],
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: ListTile(
-        title: Text(announcement.title,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          announcement.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         subtitle: Text(announcement.description),
         trailing: Text(
           announcement.date,
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  AnnouncementDetailsPage(announcement: announcement),
+            ),
+          );
+        },
       ),
     );
   }

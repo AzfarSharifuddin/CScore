@@ -1,29 +1,28 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Announcement {
-  String title;
-  String description;
-  String date;
+  final String id;
+  final String title;
+  final String description;
+  final String date;
+  final String createdBy;
 
   Announcement({
+    required this.id,
     required this.title,
     required this.description,
     required this.date,
+    required this.createdBy,
   });
 
-  // Convert object to map (useful for later Firebase or local storage)
-  Map<String, dynamic> toMap() {
-    return {
-      'title': title,
-      'description': description,
-      'date': date,
-    };
-  }
-
-  // Create object from map
-  factory Announcement.fromMap(Map<String, dynamic> map) {
+  factory Announcement.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
     return Announcement(
-      title: map['title'] ?? '',
-      description: map['description'] ?? '',
-      date: map['date'] ?? '',
+      id: doc.id,
+      title: data['Title'] ?? '',
+      description: data['Description'] ?? '',
+      date: data['Date'] ?? '',
+      createdBy: data['createdBy'] ?? '',
     );
   }
 }
