@@ -54,7 +54,7 @@ class QuizModel {
     );
   }
 
-  /// ✅ Dart → Firestore Map
+  /// ✅ Dart → Firestore map
   Map<String, dynamic> toMap() {
     return {
       'title': title,
@@ -82,7 +82,9 @@ class QuestionModel {
   final String question;
   final List<String>? options; // only for objective
   final int? answer; // only for objective
-  final String? expectedAnswer; // ✅ for subjective
+  final String? expectedAnswer; // ✅ teacher model answer
+  final String? studentAnswer; // ✅ student's response (optional for now)
+  final bool? aiEvaluated; // ✅ AI true/false evaluation
 
   QuestionModel({
     required this.type,
@@ -90,6 +92,8 @@ class QuestionModel {
     this.options,
     this.answer,
     this.expectedAnswer,
+    this.studentAnswer,
+    this.aiEvaluated = false,
   });
 
   /// Firestore → Dart
@@ -97,10 +101,11 @@ class QuestionModel {
     return QuestionModel(
       type: map['type'] ?? 'objective',
       question: map['question'] ?? '',
-      options:
-          map['options'] != null ? List<String>.from(map['options']) : null,
+      options: map['options'] != null ? List<String>.from(map['options']) : null,
       answer: map['answer'],
-      expectedAnswer: map['expectedAnswer'], // ✅ support AI marking
+      expectedAnswer: map['expectedAnswer'],
+      studentAnswer: map['studentAnswer'],
+      aiEvaluated: map['aiEvaluated'] ?? false,
     );
   }
 
@@ -113,6 +118,9 @@ class QuestionModel {
       if (answer != null) 'answer': answer,
       if (expectedAnswer != null && expectedAnswer!.isNotEmpty)
         'expectedAnswer': expectedAnswer,
+      if (studentAnswer != null && studentAnswer!.isNotEmpty)
+        'studentAnswer': studentAnswer,
+      'aiEvaluated': aiEvaluated ?? false, // ✅ always included
     };
   }
 }
