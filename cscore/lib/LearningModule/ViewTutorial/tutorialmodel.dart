@@ -6,6 +6,7 @@ class TutorialFile {
   final String uploadedBy; // ✅ Stored but not displayed
   final String description;
   final String thumbnailUrl;
+  final String? modifiedDate;
 
   TutorialFile({
     required this.fileName,
@@ -15,6 +16,7 @@ class TutorialFile {
     required this.uploadedBy, // ✅ Important for permissions
     required this.description,
     required this.thumbnailUrl,
+    this.modifiedDate,
   });
 }
 

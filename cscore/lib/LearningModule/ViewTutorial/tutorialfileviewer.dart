@@ -5,6 +5,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import 'package:pdfx/pdfx.dart';
 
 import 'full_pdf_viewer_page.dart';
 import 'tutorialmodel.dart';
@@ -28,6 +29,7 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
 
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
+  PdfController? _pdfController;
 
   @override
   void initState() {
@@ -39,73 +41,56 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
   void dispose() {
     _videoController?.dispose();
     _chewieController?.dispose();
+    _pdfController?.dispose();
     super.dispose();
   }
 
   Future<void> _initializeFile() async {
     final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/${widget.file.fileName}');
-    if (await file.exists()) {
+    final saved = File('${dir.path}/${widget.file.fileName}');
+
+    if (await saved.exists()) {
       isDownloaded = true;
-      localFilePath = file.path;
+      localFilePath = saved.path;
     }
 
     final path = localFilePath ?? widget.file.fileUrl;
-    _isAsset = path.startsWith('assets/');
     _pathForViewer = path;
+    _isAsset = path.startsWith('assets/');
 
-    // ✅ VIDEO CONTROLLER FIX (Solution 1)
+    // VIDEO SETUP
     if (widget.file.fileType == 'video') {
       if (_isAsset) {
         _videoController = VideoPlayerController.asset(path);
       } else if (isDownloaded) {
         _videoController = VideoPlayerController.file(File(path));
       } else {
-        _videoController = VideoPlayerController.network(
-          path,
-          formatHint: VideoFormat.other, // ✅ FIX APPLIED HERE
-        );
+        _videoController = VideoPlayerController.network(path);
       }
 
       await _videoController!.initialize();
-
       _chewieController = ChewieController(
         videoPlayerController: _videoController!,
         autoPlay: false,
         looping: false,
-        showControls: true,
-        allowFullScreen: true,
-        allowMuting: true,
-        allowPlaybackSpeedChanging: true,
-        materialProgressColors: ChewieProgressColors(
-          playedColor: Colors.teal,
-          handleColor: Colors.white,
-          backgroundColor: Colors.grey.shade400,
-          bufferedColor: Colors.teal.shade100,
-        ),
-        additionalOptions: (context) => [
-          OptionItem(
-            onTap: (_) async {
-              final current = _videoController!.value.position;
-              await _videoController!.seekTo(
-                current - const Duration(seconds: 10),
-              );
-            },
-            iconData: Icons.replay_10,
-            title: 'Rewind 10s',
-          ),
-          OptionItem(
-            onTap: (_) async {
-              final current = _videoController!.value.position;
-              await _videoController!.seekTo(
-                current + const Duration(seconds: 10),
-              );
-            },
-            iconData: Icons.forward_10,
-            title: 'Forward 10s',
-          ),
-        ],
       );
+    }
+
+    // PDF SETUP
+    if (widget.file.fileType == 'pdf') {
+      if (isDownloaded) {
+        _pdfController = PdfController(
+          document: PdfDocument.openFile(localFilePath!),
+        );
+      } else {
+        final response = await Dio().get(
+          widget.file.fileUrl,
+          options: Options(responseType: ResponseType.bytes),
+        );
+        _pdfController = PdfController(
+          document: PdfDocument.openData(response.data),
+        );
+      }
     }
 
     setState(() {});
@@ -122,41 +107,53 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
         widget.file.fileUrl,
         savePath,
         onReceiveProgress: (received, total) {
-          if (total != -1) {
-            setState(() => downloadProgress = received / total);
-          }
+          setState(() => downloadProgress = received / total);
         },
       );
 
       setState(() {
-        isDownloaded = true;
         isDownloading = false;
+        isDownloaded = true;
         localFilePath = savePath;
         _pathForViewer = savePath;
-        _isAsset = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ File saved for offline use!')),
+        const SnackBar(content: Text('✅ File downloaded for offline use!')),
       );
     } catch (e) {
       setState(() => isDownloading = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('❌ Failed to download file: $e')));
+      ).showSnackBar(SnackBar(content: Text('❌ Error downloading file: $e')));
     }
   }
 
-  Widget _buildFileViewer() {
+  Widget _buildPreview() {
     if (widget.file.fileType == 'video') {
-      if (_chewieController == null) {
+      if (_chewieController == null)
         return const Center(child: CircularProgressIndicator());
-      }
       return AspectRatio(
         aspectRatio: _videoController!.value.aspectRatio,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Chewie(controller: _chewieController!),
+        ),
+      );
+    }
+
+    if (widget.file.fileType == 'pdf') {
+      if (_pdfController == null)
+        return const Center(child: CircularProgressIndicator());
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: SizedBox(
+          height: 220,
+          child: PdfView(
+            controller: _pdfController!,
+            pageSnapping: false,
+            scrollDirection: Axis.horizontal,
+          ),
         ),
       );
     }
@@ -167,176 +164,138 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
   @override
   Widget build(BuildContext context) {
     final file = widget.file;
-    final color = Colors.teal.shade100;
-    final isPdf = file.fileType == 'pdf';
+
+    final appBarColor = file.fileType == 'pdf'
+        ? Colors.red.shade600
+        : Colors.blue.shade600;
+
+    final actionColor = file.fileType == 'pdf'
+        ? Colors.red.shade600
+        : Colors.blue.shade600;
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text(
-          file.fileName,
-          style: const TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black),
-        backgroundColor: color,
-        elevation: 2,
+        backgroundColor: appBarColor,
+        title: Text(file.fileName, style: const TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Icon(
-                widget.file.fileType == 'pdf'
-                    ? Icons
-                          .picture_as_pdf_rounded // PDF icon
-                    : Icons.play_circle_fill_rounded, // Video icon
-                color: widget.file.fileType == 'pdf'
-                    ? Colors.redAccent
-                    : Colors.teal,
-                size: 120,
-              ),
-            ),
-
+            _buildPreview(),
             const SizedBox(height: 20),
 
             Text(
-              file.description ?? "No description available for this material.",
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                color: Colors.black87,
-                height: 1.4,
-              ),
+              file.fileName,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 6),
 
-            const SizedBox(height: 20),
-
-            _buildFileViewer(),
-
-            if (isPdf)
-              Padding(
-                padding: const EdgeInsets.only(top: 10, bottom: 20),
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade700,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 14,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  onPressed: _pathForViewer.isEmpty
-                      ? null
-                      : () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => FullPdfViewerPage(
-                                fileName: file.fileName,
-                                filePathOrUrl: _pathForViewer,
-                                isAsset: _isAsset,
-                              ),
-                            ),
-                          );
-                        },
-                  icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
-                  label: const Text(
-                    'Open Full PDF Viewer',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+            Row(
+              children: [
+                Icon(Icons.person, size: 16, color: Colors.grey.shade700),
+                const SizedBox(width: 6),
+                Text(
+                  "Uploaded by: ${file.teacherName}",
+                  style: TextStyle(color: Colors.grey.shade700),
                 ),
-              ),
-
-            const SizedBox(height: 20),
-
-            Text(
-              'Uploaded by: ${file.teacherName}',
-              style: const TextStyle(
-                fontStyle: FontStyle.italic,
-                color: Colors.black54,
-              ),
+                const SizedBox(width: 14),
+                Icon(
+                  Icons.calendar_month,
+                  size: 16,
+                  color: Colors.grey.shade700,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  file.modifiedDate ?? "Unknown",
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+              ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
-            if (isDownloading)
-              Column(
-                children: [
-                  const Text("Downloading..."),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(value: downloadProgress),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
                 ],
-              )
-            else
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isDownloaded
-                      ? Colors.green
-                      : Colors.teal.shade600,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  elevation: 4,
-                ),
-                icon: Icon(
-                  isDownloaded ? Icons.download_done : Icons.download_rounded,
-                  color: Colors.white,
-                ),
-                label: Text(
-                  isDownloaded
-                      ? 'File Downloaded (Open Offline)'
-                      : 'Download for Offline Use',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Roboto',
-                  ),
-                ),
-                onPressed: (isDownloaded || !isPdf) ? null : _downloadFile,
               ),
+              child: Text(
+                file.description ?? "No description provided.",
+                style: const TextStyle(fontSize: 15),
+              ),
+            ),
 
-            if (isDownloaded && localFilePath != null)
+            const SizedBox(height: 28),
+
+            /// ✅ SHOW "Open PDF Viewer" ONLY FOR PDF
+            if (file.fileType == 'pdf')
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 14,
-                  ),
+                  backgroundColor: actionColor,
+                  minimumSize: const Size.fromHeight(48),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
                 onPressed: () {
-                  OpenFilex.open(localFilePath!);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FullPdfViewerPage(
+                        fileName: file.fileName,
+                        filePathOrUrl: _pathForViewer,
+                        isAsset: _isAsset,
+                      ),
+                    ),
+                  );
                 },
-                icon: const Icon(Icons.folder_open, color: Colors.white),
+                icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
                 label: const Text(
-                  'Open Offline File',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  "Open Full PDF Viewer",
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
+
+            const SizedBox(height: 12),
+
+            /// ✅ DOWNLOAD BUTTON FOR BOTH PDF & VIDEO
+            isDownloading
+                ? LinearProgressIndicator(value: downloadProgress)
+                : ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDownloaded
+                          ? Colors.green.shade600
+                          : actionColor,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: isDownloaded ? null : _downloadFile,
+                    icon: Icon(
+                      isDownloaded ? Icons.download_done : Icons.download,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      isDownloaded
+                          ? "File Saved (Open Offline)"
+                          : "Download for Offline Use",
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
           ],
         ),
       ),
