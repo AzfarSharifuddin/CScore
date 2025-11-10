@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'full_pdf_viewer_page.dart';
 import 'tutorialmodel.dart';
@@ -45,13 +46,30 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
     super.dispose();
   }
 
+  String _formatTs(Timestamp? ts) {
+    if (ts == null) return 'Unknown';
+    final local = ts.toDate().toLocal();
+    return DateFormat('dd MMM yyyy • hh:mm a').format(local);
+  }
+
   Future<void> _initializeFile() async {
     final dir = await getApplicationDocumentsDirectory();
     final saved = File('${dir.path}/${widget.file.fileName}');
+    final meta = File('${dir.path}/${widget.file.fileName}.meta');
 
-    if (await saved.exists()) {
-      isDownloaded = true;
-      localFilePath = saved.path;
+    // Check stored file + stored modifiedDate
+    if (await saved.exists() && await meta.exists()) {
+      final storedModified = await meta.readAsString();
+      final serverModified =
+          widget.file.modifiedDate?.millisecondsSinceEpoch.toString() ?? '';
+
+      // ✅ If teacher updated, require re-download
+      if (storedModified == serverModified) {
+        isDownloaded = true;
+        localFilePath = saved.path;
+      } else {
+        isDownloaded = false;
+      }
     }
 
     final path = localFilePath ?? widget.file.fileUrl;
@@ -80,7 +98,7 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
     if (widget.file.fileType == 'pdf') {
       if (isDownloaded) {
         _pdfController = PdfController(
-          document: PdfDocument.openFile(localFilePath!),
+          document: PdfDocument.openFile(_pathForViewer),
         );
       } else {
         final response = await Dio().get(
@@ -101,6 +119,7 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
 
     final dir = await getApplicationDocumentsDirectory();
     final savePath = '${dir.path}/${widget.file.fileName}';
+    final metaPath = '${dir.path}/${widget.file.fileName}.meta';
 
     try {
       await Dio().download(
@@ -110,6 +129,11 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
           setState(() => downloadProgress = received / total);
         },
       );
+
+      // ✅ Store modifiedDate for future comparison
+      final serverModified =
+          widget.file.modifiedDate?.millisecondsSinceEpoch.toString() ?? '';
+      await File(metaPath).writeAsString(serverModified, flush: true);
 
       setState(() {
         isDownloading = false;
@@ -194,24 +218,31 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
             ),
             const SizedBox(height: 6),
 
+            // Overflow-safe text row
             Row(
               children: [
                 Icon(Icons.person, size: 16, color: Colors.grey.shade700),
                 const SizedBox(width: 6),
-                Text(
-                  "Uploaded by: ${file.teacherName}",
-                  style: TextStyle(color: Colors.grey.shade700),
+                Flexible(
+                  child: Text(
+                    "Uploaded by: ${file.teacherName}",
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Icon(
                   Icons.calendar_month,
                   size: 16,
                   color: Colors.grey.shade700,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  file.modifiedDate ?? "Unknown",
-                  style: TextStyle(color: Colors.grey.shade700),
+                Flexible(
+                  child: Text(
+                    _formatTs(file.modifiedDate),
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
                 ),
               ],
             ),
@@ -233,14 +264,14 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
                 ],
               ),
               child: Text(
-                file.description ?? "No description provided.",
+                file.description,
                 style: const TextStyle(fontSize: 15),
               ),
             ),
 
             const SizedBox(height: 28),
 
-            /// ✅ SHOW "Open PDF Viewer" ONLY FOR PDF
+            // Open PDF button
             if (file.fileType == 'pdf')
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
@@ -271,7 +302,7 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
 
             const SizedBox(height: 12),
 
-            /// ✅ DOWNLOAD BUTTON FOR BOTH PDF & VIDEO
+            // Download / Re-download button
             isDownloading
                 ? LinearProgressIndicator(value: downloadProgress)
                 : ElevatedButton.icon(
