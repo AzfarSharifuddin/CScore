@@ -1,8 +1,4 @@
-// Updated Admin Dashboard with:
-// ✅ Approve All Pending Users
-// ✅ Filter Chips (All, Pending, Active, Suspended)
-// ✅ Search Bar
-// ✅ Improved UI and Logic
+
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
