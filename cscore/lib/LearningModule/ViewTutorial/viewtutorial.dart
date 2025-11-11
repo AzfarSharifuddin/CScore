@@ -43,7 +43,11 @@ class ViewTutorialPage extends StatelessWidget {
             final files = filesSnap.docs.map((fileDoc) {
               final data = fileDoc.data();
               final rawType = (data['fileType'] ?? '').toString();
-              final fileType = rawType == 'mp4' ? 'video' : rawType;
+              final fileType = rawType == 'mp4'
+                  ? 'video'
+                  : (rawType == 'pptx' || rawType == 'ppt')
+                  ? 'ppt'
+                  : rawType;
 
               return TutorialFile(
                 fileName: (data['fileName'] ?? '').toString(),
@@ -75,6 +79,8 @@ class ViewTutorialPage extends StatelessWidget {
         return Colors.red.shade600;
       case 'video':
         return Colors.blue.shade600;
+      case 'ppt':
+        return Colors.orange.shade600;
       default:
         return Colors.green.shade600;
     }
@@ -154,225 +160,167 @@ class ViewTutorialPage extends StatelessWidget {
         ),
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.teal.shade400, Colors.blue.shade400],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(26),
-              ),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "💡 Let's Learn Something New Today!",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+      body: StreamBuilder<List<Tutorial>>(
+        stream: getTutorialsStream(),
+        builder: (context, snap) {
+          if (!snap.hasData)
+            return const Center(child: CircularProgressIndicator());
+
+          final tutorials = snap.data!;
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: tutorials.length,
+            itemBuilder: (context, i) {
+              final group = tutorials[i];
+
+              return Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                margin: const EdgeInsets.only(bottom: 16),
+                child: ExpansionTile(
+                  title: Text(
+                    group.subtopic,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Explore tutorials prepared by your teachers below',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-              ],
-            ),
-          ),
+                  leading: const Icon(
+                    Icons.folder_rounded,
+                    size: 34,
+                    color: Colors.teal,
+                  ),
+                  iconColor: Colors.teal,
+                  collapsedIconColor: Colors.teal,
+                  childrenPadding: const EdgeInsets.all(12),
+                  children: group.files.map((file) {
+                    final accent = _accent(file.fileType);
+                    return FutureBuilder<File?>(
+                      future: _getThumbnail(file),
+                      builder: (context, th) {
+                        final thumb = th.data;
+                        final ago = _formatTimeAgo(file.modifiedDate);
 
-          Expanded(
-            child: StreamBuilder<List<Tutorial>>(
-              stream: getTutorialsStream(),
-              builder: (context, snap) {
-                if (!snap.hasData)
-                  return const Center(child: CircularProgressIndicator());
-
-                final tutorials = snap.data!;
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: tutorials.length,
-                  itemBuilder: (context, i) {
-                    final group = tutorials[i];
-
-                    return Card(
-                      elevation: 3,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: ExpansionTile(
-                        title: Text(
-                          group.subtopic,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+                        return GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TutorialFileViewer(file: file),
+                            ),
                           ),
-                        ),
-                        leading: const Icon(
-                          Icons.folder_rounded,
-                          size: 34,
-                          color: Colors.teal,
-                        ),
-                        iconColor: Colors.teal,
-                        collapsedIconColor: Colors.teal,
-                        childrenPadding: const EdgeInsets.all(12),
-                        children: group.files.map((file) {
-                          final accent = _accent(file.fileType);
-
-                          return FutureBuilder<File?>(
-                            future: _getThumbnail(file),
-                            builder: (context, th) {
-                              final thumb = th.data;
-                              final ago = _formatTimeAgo(file.modifiedDate);
-
-                              return GestureDetector(
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        TutorialFileViewer(file: file),
-                                  ),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              color: accent.withOpacity(
+                                .25,
+                              ), // ✅ Card color by type
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
                                 ),
-                                child: AnimatedOpacity(
-                                  duration: const Duration(milliseconds: 300),
-                                  opacity:
-                                      (thumb != null ||
-                                          th.connectionState ==
-                                              ConnectionState.done)
-                                      ? 1
-                                      : 0.6,
-                                  child: Container(
-                                    margin: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      color: accent.withOpacity(
-                                        .25,
-                                      ), // ✅ CARD COLOR BY TYPE
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.08),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 3),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Thumbnail stack (unchanged)
-                                        Stack(
-                                          children: [
-                                            ClipRRect(
-                                              borderRadius:
-                                                  const BorderRadius.vertical(
-                                                    top: Radius.circular(16),
-                                                  ),
-                                              child: thumb != null
-                                                  ? Image.file(
-                                                      thumb,
-                                                      height: 150,
-                                                      width: double.infinity,
-                                                      fit: BoxFit.cover,
-                                                    )
-                                                  : Container(
-                                                      height: 150,
-                                                      width: double.infinity,
-                                                      color: accent.withOpacity(
-                                                        .25,
-                                                      ),
-                                                      child: Icon(
-                                                        file.fileType == 'video'
-                                                            ? Icons
-                                                                  .play_circle_fill_rounded
-                                                            : Icons
-                                                                  .picture_as_pdf_rounded,
-                                                        color: accent,
-                                                        size: 60,
-                                                      ),
-                                                    ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(16),
+                                      ),
+                                      child: thumb != null
+                                          ? Image.file(
+                                              thumb,
+                                              height: 150,
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Container(
+                                              height: 150,
+                                              width: double.infinity,
+                                              color: accent.withOpacity(.25),
+                                              child: Icon(
+                                                file.fileType == 'video'
+                                                    ? Icons
+                                                          .play_circle_fill_rounded
+                                                    : file.fileType == 'pdf'
+                                                    ? Icons
+                                                          .picture_as_pdf_rounded
+                                                    : Icons
+                                                          .slideshow_rounded, // ✅ PowerPoint-style icon
+                                                color: accent,
+                                                size: 60,
+                                              ),
                                             ),
-                                            if (_isNew(file.modifiedDate))
-                                              Positioned(
-                                                right: 8,
-                                                top: 8,
-                                                child: Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 4,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.red.shade600,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                  ),
-                                                  child: const Text(
-                                                    "NEW",
-                                                    style: TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 11,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-
-                                        Padding(
-                                          padding: const EdgeInsets.all(14),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                file.fileName,
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              Text(
-                                                "By ${file.teacherName} • Updated $ago",
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                  color: Colors.black54,
-                                                ),
-                                              ),
-                                            ],
+                                    ),
+                                    if (_isNew(file.modifiedDate))
+                                      Positioned(
+                                        right: 8,
+                                        top: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.shade600,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: const Text(
+                                            "NEW",
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                  ],
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(14),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        file.fileName,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        "By ${file.teacherName} • Updated $ago",
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              );
-                            },
-                          );
-                        }).toList(),
-                      ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+                  }).toList(),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
