@@ -1,22 +1,26 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class TutorialFile {
   final String fileName;
   final String fileType;
   final String fileUrl;
   final String teacherName;
-  final String uploadedBy; // ✅ Stored but not displayed
+  final String uploadedBy;
   final String description;
   final String thumbnailUrl;
-  final String? modifiedDate;
+  final Timestamp? modifiedDate;
+  String? localModifiedDate; // used for offline version validation
 
   TutorialFile({
     required this.fileName,
     required this.fileType,
     required this.fileUrl,
     required this.teacherName,
-    required this.uploadedBy, // ✅ Important for permissions
+    required this.uploadedBy,
     required this.description,
     required this.thumbnailUrl,
     this.modifiedDate,
+    this.localModifiedDate,
   });
 }
 
