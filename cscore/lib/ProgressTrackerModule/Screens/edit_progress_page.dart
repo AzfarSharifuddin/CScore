@@ -6,7 +6,6 @@ import 'package:cscore/ProgressTrackerModule/Services/progress_service.dart';
 
 class EditProgressPage extends StatefulWidget {
   final ProgressRecord record;
-
   const EditProgressPage({super.key, required this.record});
 
   @override
@@ -15,37 +14,31 @@ class EditProgressPage extends StatefulWidget {
 
 class _EditProgressPageState extends State<EditProgressPage> {
   final ProgressService _progressService = ProgressService();
-  final _formKey = GlobalKey<FormState>();
-
-  late final TextEditingController _activityNameController;
-  late final TextEditingController _scoreController;
+  late TextEditingController _scoreController;
   late String _selectedStatus;
   bool _isSaving = false;
 
-  // Decide learning vs activity:
-  // We treat a record as "learning" when status looks like a learning-status value.
-  bool get isLearningProgress {
-    final s = (widget.record.status ?? '').toString().toLowerCase();
-    return s.contains('progress') || s.contains('done') || s.contains('completed') || s.contains('not started');
-  }
+  bool get isLearning => widget.record.type == 'learning';
 
   @override
   void initState() {
     super.initState();
+    _scoreController = TextEditingController(text: widget.record.score.toString());
+    final raw = (widget.record.status ?? '').trim();
+    _selectedStatus = raw.isNotEmpty ? _capitalizeStatus(raw) : 'In Progress';
+  }
 
-    // Safely initialize controllers and status (handle possible nulls)
-    _activityNameController =
-        TextEditingController(text: widget.record.activityName ?? '');
-    // If score may be null, fallback to '0'. Otherwise toString() is fine.
-    _scoreController =
-        TextEditingController(text: (widget.record.score ?? 0.0).toString());
-    final rawStatus = (widget.record.status ?? '').toString().trim();
-    _selectedStatus = rawStatus.isNotEmpty ? rawStatus : 'In Progress';
+  String _capitalizeStatus(String s) {
+    final lower = s.toLowerCase();
+    if (lower == 'done' || lower == 'completed') return 'Completed';
+    if (lower == 'in progress') return 'In Progress';
+    if (lower == 'not started') return 'Not Started';
+    // default: keep title-case
+    return s[0].toUpperCase() + s.substring(1);
   }
 
   @override
   void dispose() {
-    _activityNameController.dispose();
     _scoreController.dispose();
     super.dispose();
   }
@@ -53,53 +46,50 @@ class _EditProgressPageState extends State<EditProgressPage> {
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
       case 'completed':
-      case 'done':
-        return Colors.green.shade600;
+        return Colors.green;
       case 'in progress':
-        return Colors.orange.shade600;
+        return Colors.orange;
       case 'not started':
-        return Colors.red.shade600;
+        return Colors.red;
       default:
-        return Colors.grey.shade600;
+        return Colors.grey;
     }
   }
 
-  Future<void> _updateProgress() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _save() async {
+    if (!isLearning) {
+      // validate score
+      final val = _scoreController.text.trim();
+      if (val.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a score')));
+        return;
+      }
+      final parsed = double.tryParse(val);
+      if (parsed == null || parsed < 0 || parsed > 100) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Score must be a number between 0 and 100')));
+        return;
+      }
+    }
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     setState(() => _isSaving = true);
 
+    final updated = widget.record.copyWith(
+      score: isLearning ? widget.record.score : double.tryParse(_scoreController.text) ?? widget.record.score,
+      status: isLearning ? _selectedStatus : widget.record.status,
+      type: widget.record.type, // preserve type
+      completedAt: DateTime.now(),
+    );
+
     try {
-      final updated = ProgressRecord(
-        id: widget.record.id,
-        // activityName remains unchanged for learning progress (read-only),
-        activityName: isLearningProgress
-            ? widget.record.activityName ?? ''
-            : _activityNameController.text.trim(),
-        completedAt: DateTime.now(),
-        score: isLearningProgress
-            ? (widget.record.score ?? 0.0)
-            : double.tryParse(_scoreController.text.trim()) ?? 0.0,
-        status: isLearningProgress ? _selectedStatus : (widget.record.status ?? ''),
-      );
-
       await _progressService.updateProgress(user.uid, updated);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Progress updated successfully!')),
-        );
-        Navigator.pop(context);
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Updated')));
+      Navigator.pop(context);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Update failed: $e')),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: $e')));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -112,157 +102,53 @@ class _EditProgressPageState extends State<EditProgressPage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: const Color(0xFFF5F5F7),
-        title: const Text(
-          'Edit Progress',
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
-        ),
+        title: Text(isLearning ? 'Edit Learning Progress' : 'Edit Activity Progress', style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 22)),
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 3))]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(widget.record.activityName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 16),
+              if (isLearning) ...[
+                DropdownButtonFormField<String>(
+                  value: _selectedStatus,
+                  decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                  items: const [
+                    DropdownMenuItem(value: 'Completed', child: Text('Completed')),
+                    DropdownMenuItem(value: 'In Progress', child: Text('In Progress')),
+                    DropdownMenuItem(value: 'Not Started', child: Text('Not Started')),
+                  ],
+                  onChanged: (v) => setState(() => _selectedStatus = v ?? 'In Progress'),
                 ),
+                const SizedBox(height: 12),
+                Row(children: [
+                  const Text('Current Status: ', style: TextStyle(fontWeight: FontWeight.w500)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(color: _statusColor(_selectedStatus).withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                    child: Text(_selectedStatus, style: TextStyle(color: _statusColor(_selectedStatus), fontWeight: FontWeight.w600)),
+                  )
+                ])
+              ] else ...[
+                TextField(controller: _scoreController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Score', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
               ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isLearningProgress ? 'Edit Learning Progress' : 'Edit Activity Progress',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _save,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text('Save Changes'),
                 ),
-                const SizedBox(height: 20),
-
-                // Activity name (read-only for learning progress)
-                TextFormField(
-                  controller: _activityNameController,
-                  enabled: !isLearningProgress,
-                  decoration: InputDecoration(
-                    labelText: 'Activity Name',
-                    labelStyle: const TextStyle(color: Colors.grey),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: isLearningProgress ? Colors.grey.shade200 : Colors.white,
-                  ),
-                  validator: (val) {
-                    if (!isLearningProgress && (val == null || val.trim().isEmpty)) {
-                      return 'Activity name is required';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                // Status dropdown for learning, score input for activity
-                if (isLearningProgress) ...[
-                  DropdownButtonFormField<String>(
-                    value: _selectedStatus,
-                    decoration: InputDecoration(
-                      labelText: 'Status',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'Completed', child: Text('Completed')),
-                      DropdownMenuItem(value: 'In Progress', child: Text('In Progress')),
-                      DropdownMenuItem(value: 'Not Started', child: Text('Not Started')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setState(() => _selectedStatus = val);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Text('Current Status: ', style: TextStyle(fontWeight: FontWeight.w500)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _statusColor(_selectedStatus).withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          _selectedStatus,
-                          style: TextStyle(
-                            color: _statusColor(_selectedStatus),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  TextFormField(
-                    controller: _scoreController,
-                    decoration: InputDecoration(
-                      labelText: 'Score',
-                      labelStyle: const TextStyle(color: Colors.grey),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'Score is required';
-                      final parsed = double.tryParse(val.trim());
-                      if (parsed == null || parsed < 0 || parsed > 100) {
-                        return 'Score must be between 0 and 100';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-
-                const Spacer(),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _updateProgress,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
-                        : const Text(
-                            'Save Changes',
-                            style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600),
-                          ),
-                  ),
-                ),
-              ],
-            ),
+              )
+            ],
           ),
         ),
       ),

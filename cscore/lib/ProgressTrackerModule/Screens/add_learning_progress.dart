@@ -9,8 +9,7 @@ class AddLearningProgressPage extends StatefulWidget {
   const AddLearningProgressPage({super.key});
 
   @override
-  State<AddLearningProgressPage> createState() =>
-      _AddLearningProgressPageState();
+  State<AddLearningProgressPage> createState() => _AddLearningProgressPageState();
 }
 
 class _AddLearningProgressPageState extends State<AddLearningProgressPage> {
@@ -20,7 +19,6 @@ class _AddLearningProgressPageState extends State<AddLearningProgressPage> {
   final TextEditingController scoreCtrl = TextEditingController();
   bool _isLoading = false;
 
-  // Map: topicName -> list of file names
   Map<String, List<String>> topicFiles = {};
 
   @override
@@ -37,20 +35,13 @@ class _AddLearningProgressPageState extends State<AddLearningProgressPage> {
 
   Future<void> _fetchTopicsAndFiles() async {
     try {
-      final tutorialsSnap =
-          await FirebaseFirestore.instance.collection('tutorials').get();
-
+      final tutorialsSnap = await FirebaseFirestore.instance.collection('tutorials').get();
       final Map<String, List<String>> topicMap = {};
-
       for (final topicDoc in tutorialsSnap.docs) {
         final topicData = topicDoc.data();
         final topicName = (topicData['subtopic'] ?? '').toString().trim();
-        // If topic name is empty, use doc id so user sees something
         final safeTopicName = topicName.isNotEmpty ? topicName : topicDoc.id;
-
-        final filesSnap =
-            await topicDoc.reference.collection('files').get();
-
+        final filesSnap = await topicDoc.reference.collection('files').get();
         final List<String> files = filesSnap.docs
             .map((fileDoc) {
               final f = fileDoc.data();
@@ -58,165 +49,17 @@ class _AddLearningProgressPageState extends State<AddLearningProgressPage> {
             })
             .where((fileName) => fileName.isNotEmpty)
             .toList();
-
         topicMap[safeTopicName] = files;
       }
-
-      // Update state ONCE with the finished map
-      if (mounted) {
-        setState(() {
-          topicFiles = topicMap;
-        });
-      }
+      if (mounted) setState(() => topicFiles = topicMap);
     } catch (e) {
-      // show a snackbar if fetch fails
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load tutorial files: $e')),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load tutorial files: $e')));
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // If still loading topics/files:
-    final loading = topicFiles.isEmpty;
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFFF5F5F7),
-        title: const Text(
-          "Add Learning Progress",
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
-        ),
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Select Topic",
-                      style:
-                          TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _selectedTopic,
-                    items: topicFiles.keys
-                        .map((topic) => DropdownMenuItem(
-                              value: topic,
-                              child: Text(topic),
-                            ))
-                        .toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedTopic = val;
-                        _selectedFile = null;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text("Select Learning File",
-                      style:
-                          TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _selectedFile,
-                    items: (_selectedTopic == null
-                            ? <String>[]
-                            : (topicFiles[_selectedTopic!] ?? <String>[]))
-                        .map((f) => DropdownMenuItem(value: f, child: Text(f)))
-                        .toList(),
-                    onChanged: (val) {
-                      setState(() => _selectedFile = val);
-                    },
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (_selectedTopic != null &&
-                      (topicFiles[_selectedTopic!] ?? []).isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 12),
-                      child: Text('No files uploaded yet for this topic.',
-                          style: TextStyle(color: Colors.grey)),
-                    ),
-                  const SizedBox(height: 8),
-                  const Text("Learning Status",
-                      style:
-                          TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _status,
-                    items: const [
-                      DropdownMenuItem(value: "In Progress", child: Text("In Progress")),
-                      DropdownMenuItem(value: "Done", child: Text("Done")),
-                    ],
-                    onChanged: (val) => setState(() => _status = val!),
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: scoreCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: "Score (optional)",
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: _isLoading ? null : _saveProgress,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
-                        : const Text("Save"),
-                  )
-                ],
-              ),
-            ),
-    );
   }
 
   Future<void> _saveProgress() async {
     if (_selectedTopic == null || _selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select both a topic and a learning file")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select both a topic and a learning file")));
       return;
     }
 
@@ -229,21 +72,92 @@ class _AddLearningProgressPageState extends State<AddLearningProgressPage> {
         completedAt: DateTime.now(),
         score: double.tryParse(scoreCtrl.text) ?? 0.0,
         status: _status,
+        type: 'learning',
       );
 
       await ProgressService().addProgress(userId, record);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Learning progress added successfully!")),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Learning progress added successfully!")));
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loading = topicFiles.isEmpty;
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F7),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: const Color(0xFFF5F5F7),
+        title: const Text(
+          "Add Learning Progress",
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 22),
+        ),
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Select Topic", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _selectedTopic,
+                    items: topicFiles.keys.map((topic) => DropdownMenuItem(value: topic, child: Text(topic))).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedTopic = val;
+                        _selectedFile = null;
+                      });
+                    },
+                    decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text("Select Learning File", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _selectedFile,
+                    items: (_selectedTopic == null ? <String>[] : (topicFiles[_selectedTopic!] ?? <String>[])).map((f) => DropdownMenuItem(value: f, child: Text(f))).toList(),
+                    onChanged: (val) => setState(() => _selectedFile = val),
+                    decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                  ),
+                  const SizedBox(height: 12),
+                  if (_selectedTopic != null && (topicFiles[_selectedTopic!] ?? []).isEmpty)
+                    const Padding(padding: EdgeInsets.only(bottom: 12), child: Text('No files uploaded yet for this topic.', style: TextStyle(color: Colors.grey))),
+                  const SizedBox(height: 8),
+                  const Text("Learning Status", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _status,
+                    items: const [
+                      DropdownMenuItem(value: "In Progress", child: Text("In Progress")),
+                      DropdownMenuItem(value: "Completed", child: Text("Completed")),
+                      DropdownMenuItem(value: "Not Started", child: Text("Not Started")),
+                    ],
+                    onChanged: (val) => setState(() => _status = val ?? 'In Progress'),
+                    decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(controller: scoreCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Score (optional)", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 48), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    onPressed: _isLoading ? null : _saveProgress,
+                    child: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text("Save"),
+                  )
+                ],
+              ),
+            ),
+    );
   }
 }

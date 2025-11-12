@@ -1,3 +1,4 @@
+// add_activity_progress.dart
 import 'package:flutter/material.dart';
 import 'package:cscore/ProgressTrackerModule/Model/progress_record.dart';
 import 'package:cscore/ProgressTrackerModule/Services/progress_service.dart';
@@ -13,6 +14,43 @@ class AddActivityProgressPage extends StatefulWidget {
 class _AddActivityProgressPageState extends State<AddActivityProgressPage> {
   final nameCtrl = TextEditingController();
   final scoreCtrl = TextEditingController();
+  bool _isSaving = false;
+
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    scoreCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = nameCtrl.text.trim();
+    final score = double.tryParse(scoreCtrl.text.trim()) ?? 0.0;
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+      return;
+    }
+    setState(() => _isSaving = true);
+    try {
+      final record = ProgressRecord(
+        id: '',
+        activityName: name,
+        completedAt: DateTime.now(),
+        score: score,
+        status: 'completed',
+        type: 'activity',
+      );
+      final userId = FirebaseAuth.instance.currentUser!.uid;
+      await ProgressService().addProgress(userId, record);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Progress added successfully!")));
+      Navigator.pop(context);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,32 +78,8 @@ class _AddActivityProgressPageState extends State<AddActivityProgressPage> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () async {
-                if (nameCtrl.text.isEmpty || scoreCtrl.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Please fill all fields")),
-                  );
-                  return;
-                }
-
-                final record = ProgressRecord(
-                  id: '',
-                  activityName: nameCtrl.text,
-                  completedAt: DateTime.now(),
-                  score: double.tryParse(scoreCtrl.text) ?? 0.0,
-                  status: "completed",
-                );
-
-                final userId = FirebaseAuth.instance.currentUser!.uid;
-                await ProgressService().addProgress(userId, record);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Progress added successfully!")),
-                );
-
-                Navigator.pop(context);
-              },
-              child: const Text("Save"),
+              onPressed: _isSaving ? null : _save,
+              child: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text("Save"),
             ),
           ],
         ),
