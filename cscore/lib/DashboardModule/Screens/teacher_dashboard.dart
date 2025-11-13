@@ -37,8 +37,7 @@ class TeacherDashboard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            /// TOP BUTTONS REDESIGNED
+            /// TOP BUTTONS
             Row(
               children: [
                 Expanded(
@@ -54,7 +53,7 @@ class TeacherDashboard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDDEAF7), // Soft blue
+                        color: const Color(0xFFDDEAF7),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       alignment: Alignment.center,
@@ -83,7 +82,7 @@ class TeacherDashboard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8ECD9), // Soft peach
+                        color: const Color(0xFFF8ECD9),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       alignment: Alignment.center,
@@ -94,6 +93,48 @@ class TeacherDashboard extends StatelessWidget {
                           color: Colors.black87,
                           fontSize: 14,
                         ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            /// ⭐ NEW FORUM BUTTON (Just like Student Dashboard)
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/forum'); // <-- Forum route
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFE3DFF7), // Soft purple
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.forum_rounded,
+                            color: Colors.black87,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            "Forum",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -115,7 +156,6 @@ class TeacherDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            /// ACTIVITY CARDS (unchanged logic, but cards already styled internally)
             ...data.getActivities().map((a) => ActivityCard(activity: a)),
             const SizedBox(height: 24),
 
@@ -125,7 +165,6 @@ class TeacherDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            /// FIREBASE ANNOUNCEMENTS (unchanged)
             StreamBuilder(
               stream: FirebaseFirestore.instance
                   .collection('Announcements')
@@ -151,13 +190,12 @@ class TeacherDashboard extends StatelessWidget {
         ),
       ),
 
-      /// BOTTOM NAV REDESIGN
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
-            BoxShadow(color: Colors.black12.withOpacity(0.08), blurRadius: 12)
+            BoxShadow(color: Colors.black12.withOpacity(0.08), blurRadius: 12),
           ],
         ),
         child: BottomNavigationBar(
