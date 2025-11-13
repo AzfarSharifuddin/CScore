@@ -37,9 +37,12 @@ class TeacherDashboard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// TOP BUTTONS
+            // -------------------------------------------------------------
+            // TOP BUTTONS (Three buttons in ONE ROW)
+            // -------------------------------------------------------------
             Row(
               children: [
+                // NEW ANNOUNCEMENT
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
@@ -68,7 +71,10 @@ class TeacherDashboard extends StatelessWidget {
                     ),
                   ),
                 ),
+
                 const SizedBox(width: 12),
+
+                // MANAGE ACTIVITIES
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
@@ -97,23 +103,19 @@ class TeacherDashboard extends StatelessWidget {
                     ),
                   ),
                 ),
-              ],
-            ),
 
-            const SizedBox(height: 12),
+                const SizedBox(width: 12),
 
-            /// ⭐ NEW FORUM BUTTON (Just like Student Dashboard)
-            Row(
-              children: [
+                // FORUM BUTTON
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      Navigator.pushNamed(context, '/forum'); // <-- Forum route
+                      Navigator.pushNamed(context, '/forum');
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: Color(0xFFE3DFF7), // Soft purple
+                        color: const Color(0xFFE3DFF7), // Soft purple
                         borderRadius: BorderRadius.circular(16),
                       ),
                       alignment: Alignment.center,
@@ -144,12 +146,19 @@ class TeacherDashboard extends StatelessWidget {
 
             const SizedBox(height: 24),
 
+            // -------------------------------------------------------------
+            // CLASS TITLE
+            // -------------------------------------------------------------
             const Text(
               'Class: Programming',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 20),
+
+            // -------------------------------------------------------------
+            // MANAGE ACTIVITIES LIST
+            // -------------------------------------------------------------
             const Text(
               'Manage Activities',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -159,6 +168,9 @@ class TeacherDashboard extends StatelessWidget {
             ...data.getActivities().map((a) => ActivityCard(activity: a)),
             const SizedBox(height: 24),
 
+            // -------------------------------------------------------------
+            // ANNOUNCEMENTS
+            // -------------------------------------------------------------
             const Text(
               'Announcements',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -190,6 +202,9 @@ class TeacherDashboard extends StatelessWidget {
         ),
       ),
 
+      // -------------------------------------------------------------
+      // BOTTOM NAVIGATION BAR
+      // -------------------------------------------------------------
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
