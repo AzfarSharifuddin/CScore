@@ -1,9 +1,7 @@
-// view_progress.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cscore/ProgressTrackerModule/Services/progress_service.dart';
 import 'package:cscore/ProgressTrackerModule/Model/progress_record.dart';
-import 'add_progress.dart';
 import 'edit_progress_page.dart';
 import 'add_learning_progress.dart';
 import 'add_activity_progress.dart';
@@ -18,30 +16,46 @@ class ViewProgressScreen extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        if (!snapshot.hasData) {
+          return const Scaffold(body: Center(child: Text("Login required")));
         }
 
-        final user = snapshot.data;
-        if (user == null) {
-          return const Scaffold(body: Center(child: Text("You must be logged in to view progress.", style: TextStyle(fontSize: 16))));
-        }
-
-        final userId = user.uid;
+        final userId = snapshot.data!.uid;
 
         return Scaffold(
           backgroundColor: const Color(0xFFF5F5F7),
-          appBar: AppBar(elevation: 0, backgroundColor: const Color(0xFFF5F5F7), title: const Text("My Progress", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 22)), centerTitle: true),
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor: const Color(0xFFF5F5F7),
+            title: const Text("My Progress",
+                style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 22)),
+            centerTitle: true,
+          ),
           body: _buildProgressBody(context, userId),
           floatingActionButton: FloatingActionButton(
             backgroundColor: Colors.black,
             onPressed: () {
               showModalBottomSheet(
                 context: context,
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+                shape:
+                    const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
                 builder: (_) => Wrap(children: [
-                  ListTile(leading: const Icon(Icons.school_rounded), title: const Text("Add Learning Progress"), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AddLearningProgressPage())); }),
-                  ListTile(leading: const Icon(Icons.fitness_center_rounded), title: const Text("Add Activity Progress"), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AddActivityProgressPage())); }),
+                  ListTile(
+                    leading: const Icon(Icons.school_rounded),
+                    title: const Text("Add Learning Progress"),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AddLearningProgressPage()));
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.fitness_center_rounded),
+                    title: const Text("Add Activity Progress"),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AddActivityProgressPage()));
+                    },
+                  ),
                 ]),
               );
             },
@@ -54,19 +68,22 @@ class ViewProgressScreen extends StatelessWidget {
 
   Widget _buildProgressBody(BuildContext context, String userId) {
     return StreamBuilder<List<ProgressRecord>>(
-      stream: _progressService.getProgressStream(userId),
+      stream: _progressService.getCombinedProgress(userId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Error loading progress: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+          return Center(
+              child: Text("Error: ${snapshot.error}", style: const TextStyle(color: Colors.red)));
         }
 
-        if (snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData) {
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
 
         final progress = snapshot.data!;
         if (progress.isEmpty) {
-          return const Center(child: Text('No progress yet.\nTap + to add your first record!', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey)));
+          return const Center(
+              child: Text("No progress yet.\nTap + to add your first record!",
+                  textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey)));
         }
 
         return ListView.separated(
@@ -75,6 +92,8 @@ class ViewProgressScreen extends StatelessWidget {
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, i) {
             final p = progress[i];
+            final isLearning = p.type == 'learning';
+            final isQuiz = p.type == 'quiz';
 
             Color statusColor;
             switch (p.status.toLowerCase()) {
@@ -91,35 +110,52 @@ class ViewProgressScreen extends StatelessWidget {
                 statusColor = Colors.grey;
             }
 
-            final isLearning = p.type == 'learning';
-
             return GestureDetector(
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EditProgressPage(record: p))),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 3))]),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 3))
+                    ]),
                 child: Row(
                   children: [
                     Container(
                       height: 46,
                       width: 46,
                       decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(12)),
-                      child: Icon(isLearning ? Icons.school_rounded : (p.activityName.toLowerCase().contains('quiz') ? Icons.quiz_rounded : Icons.fitness_center_rounded), color: Colors.white),
+                      child: Icon(
+                        isLearning
+                            ? Icons.school_rounded
+                            : isQuiz
+                                ? Icons.quiz_rounded
+                                : Icons.fitness_center_rounded,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(p.activityName, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.black87)),
+                        Text(p.activityName,
+                            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
-                        if (isLearning)
-                          Text('Status: ${p.status}', style: TextStyle(fontSize: 14, color: statusColor, fontWeight: FontWeight.w600))
+                        if (isLearning || isQuiz)
+                          Text("Status: ${p.status}",
+                              style: TextStyle(fontSize: 14, color: statusColor, fontWeight: FontWeight.w600))
                         else
-                          Text('Score: ${p.score.toStringAsFixed(1)}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                          Text("Score: ${p.score.toStringAsFixed(1)}",
+                              style: const TextStyle(fontSize: 14, color: Colors.grey)),
                         const SizedBox(height: 2),
-                        Text("${p.completedAt.toLocal()}".split('.')[0], style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        Text("${p.completedAt}",
+                            style: const TextStyle(fontSize: 12, color: Colors.grey)),
                       ]),
                     ),
-                    IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => ProgressService().deleteProgress(userId, p.id)),
+                    IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        onPressed: () =>
+                            ProgressService().deleteProgress(userId, p.id)),
                   ],
                 ),
               ),

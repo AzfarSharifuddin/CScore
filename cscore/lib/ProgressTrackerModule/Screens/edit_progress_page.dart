@@ -77,11 +77,17 @@ class _EditProgressPageState extends State<EditProgressPage> {
     setState(() => _isSaving = true);
 
     final updated = widget.record.copyWith(
-      score: isLearning ? widget.record.score : double.tryParse(_scoreController.text) ?? widget.record.score,
-      status: isLearning ? _selectedStatus : widget.record.status,
-      type: widget.record.type, // preserve type
-      completedAt: DateTime.now(),
-    );
+  score: isLearning 
+      ? widget.record.score        // leave score unchanged
+      : double.tryParse(_scoreController.text) ?? widget.record.score,
+
+  status: isLearning
+      ? _selectedStatus.toLowerCase()   // very important!
+      : widget.record.status,
+
+  completedAt: DateTime.now(),
+);
+
 
     try {
       await _progressService.updateProgress(user.uid, updated);
