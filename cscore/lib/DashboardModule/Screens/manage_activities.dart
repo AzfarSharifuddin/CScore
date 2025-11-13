@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cscore/QuizModule/Management/create_quiz.dart';
-import 'package:cscore/LearningModule/ViewTutorial/viewtutorial.dart';
+import 'package:cscore/LearningModule/ManageTutorial/AddTutorial.dart';
 
 class ManageActivitiesPage extends StatelessWidget {
   const ManageActivitiesPage({super.key});
@@ -32,7 +32,6 @@ class ManageActivitiesPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // SECTION LABEL
             const Text(
               "Teaching Tools",
@@ -54,7 +53,10 @@ class ManageActivitiesPage extends StatelessWidget {
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 18,
+                  horizontal: 16,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -75,7 +77,11 @@ class ManageActivitiesPage extends StatelessWidget {
                         color: Colors.amber.shade200,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(Icons.quiz, color: Colors.black87, size: 26),
+                      child: const Icon(
+                        Icons.quiz,
+                        color: Colors.black87,
+                        size: 26,
+                      ),
                     ),
                     const SizedBox(width: 16),
 
@@ -86,13 +92,14 @@ class ManageActivitiesPage extends StatelessWidget {
                         Text(
                           "Quiz",
                           style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         SizedBox(height: 4),
                         Text(
                           "Create or manage quiz",
-                          style: TextStyle(
-                              fontSize: 14, color: Colors.grey),
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -108,11 +115,14 @@ class ManageActivitiesPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ViewTutorialPage()),
+                  MaterialPageRoute(builder: (_) => const AddTutorialPage()),
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 18,
+                  horizontal: 16,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -133,8 +143,11 @@ class ManageActivitiesPage extends StatelessWidget {
                         color: Colors.green.shade200,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child:
-                          const Icon(Icons.menu_book, color: Colors.black87, size: 26),
+                      child: const Icon(
+                        Icons.menu_book,
+                        color: Colors.black87,
+                        size: 26,
+                      ),
                     ),
                     const SizedBox(width: 16),
 
@@ -145,13 +158,14 @@ class ManageActivitiesPage extends StatelessWidget {
                         Text(
                           "Learning Module",
                           style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         SizedBox(height: 4),
                         Text(
                           "Upload or update notes",
-                          style: TextStyle(
-                              fontSize: 14, color: Colors.grey),
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
                         ),
                       ],
                     ),
