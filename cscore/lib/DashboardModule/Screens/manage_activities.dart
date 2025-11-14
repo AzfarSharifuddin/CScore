@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cscore/QuizModule/Management/create_quiz.dart';
+import 'package:cscore/QuizModule/Management/manage_quiz.dart';
 import 'package:cscore/LearningModule/ManageTutorial/AddTutorial.dart';
 
 class ManageActivitiesPage extends StatelessWidget {
@@ -49,7 +49,7 @@ class ManageActivitiesPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const CreateQuizPage()),
+                  MaterialPageRoute(builder: (_) => const ManageQuizzesPage()),
                 );
               },
               child: Container(
