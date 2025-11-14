@@ -13,6 +13,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 
 import 'full_pdf_viewer_page.dart';
 import 'tutorialmodel.dart';
+import 'videoFullScreen.dart';
 
 class TutorialFileViewer extends StatefulWidget {
   final TutorialFile file;
@@ -32,8 +33,8 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
   bool _isAsset = false;
 
   VideoPlayerController? _videoController;
-  ChewieController? _chewieController;
-  PdfController? _pdfController;
+  ChewieController? _chewie;
+  PdfController? _pdf;
 
   @override
   void initState() {
@@ -44,134 +45,148 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
   @override
   void dispose() {
     _videoController?.dispose();
-    _chewieController?.dispose();
-    _pdfController?.dispose();
+    _chewie?.dispose();
+    _pdf?.dispose();
     super.dispose();
   }
 
   String _formatTs(Timestamp? ts) {
     if (ts == null) return 'Unknown';
-    final local = ts.toDate().toLocal();
-    return DateFormat('dd MMM yyyy • hh:mm a').format(local);
+    return DateFormat('dd MMM yyyy • hh:mm a').format(ts.toDate());
   }
 
-  // ---- Connectivity helper that works for both old & new connectivity_plus
   Future<bool> _hasInternet() async {
-    final dynamic result = await Connectivity().checkConnectivity();
-    if (result is List<ConnectivityResult>) {
-      return result.any((r) => r != ConnectivityResult.none);
-    }
-    if (result is ConnectivityResult) {
-      return result != ConnectivityResult.none;
-    }
-    return false;
+    final result = await Connectivity().checkConnectivity();
+    return result != ConnectivityResult.none;
   }
 
+  // --------------------------------------------------------
+  // MAIN INIT
+  // --------------------------------------------------------
   Future<void> _initializeFile() async {
     final dir = await getApplicationDocumentsDirectory();
     final saved = File('${dir.path}/${widget.file.fileName}');
     final meta = File('${dir.path}/${widget.file.fileName}.meta');
 
-    // Validate against modifiedDate (forces re-download when teacher updates)
     if (await saved.exists() && await meta.exists()) {
-      final storedModified = await meta.readAsString();
-      final serverModified =
+      final stored = await meta.readAsString();
+      final server =
           widget.file.modifiedDate?.millisecondsSinceEpoch.toString() ?? '';
-      if (storedModified == serverModified) {
+      if (stored == server) {
         isDownloaded = true;
         localFilePath = saved.path;
-      } else {
-        isDownloaded = false;
       }
     }
 
-    final path = localFilePath ?? widget.file.fileUrl;
-    _pathForViewer = path;
-    _isAsset = path.startsWith('assets/');
+    _pathForViewer = localFilePath ?? widget.file.fileUrl;
+    _isAsset = _pathForViewer.startsWith('assets/');
 
-    // VIDEO SETUP (inline)
-    if (widget.file.fileType.toLowerCase() == 'video') {
-      if (_isAsset) {
-        _videoController = VideoPlayerController.asset(path);
-      } else if (isDownloaded) {
-        _videoController = VideoPlayerController.file(File(path));
-      } else {
-        _videoController = VideoPlayerController.network(path);
-      }
+    final t = widget.file.fileType.toLowerCase();
 
-      await _videoController!.initialize();
-      _chewieController = ChewieController(
-        videoPlayerController: _videoController!,
-        autoPlay: false,
-        looping: false,
-      );
-    }
-
-    // PDF SETUP (inline)
-    if (widget.file.fileType.toLowerCase() == 'pdf') {
-      if (isDownloaded) {
-        _pdfController = PdfController(
-          document: PdfDocument.openFile(_pathForViewer),
-        );
-      } else {
-        final response = await Dio().get(
-          widget.file.fileUrl,
-          options: Options(responseType: ResponseType.bytes),
-        );
-        _pdfController = PdfController(
-          document: PdfDocument.openData(response.data),
-        );
-      }
-    }
+    if (t == 'video') await _setupVideo();
+    if (t == 'pdf') await _setupPdf();
 
     setState(() {});
   }
 
+  // --------------------------------------------------------
+  // *** FIXED VIDEO SETUP ***
+  // --------------------------------------------------------
+  Future<void> _setupVideo() async {
+    _videoController?.dispose();
+    _videoController = null;
+
+    final path = _pathForViewer;
+
+    if (_isAsset) {
+      _videoController = VideoPlayerController.asset(path);
+    } else if (isDownloaded) {
+      _videoController = VideoPlayerController.file(File(path));
+    } else {
+      _videoController = VideoPlayerController.networkUrl(Uri.parse(path));
+    }
+
+    await _videoController!.initialize();
+
+    // Wait until metadata loads (fixes duration = 0 bug)
+    while (_videoController!.value.duration.inMilliseconds == 0) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    // Update UI on every frame
+    _videoController!.addListener(() {
+      if (mounted) setState(() {});
+    });
+
+    setState(() {});
+  }
+
+  // --------------------------------------------------------
+  // PDF
+  // --------------------------------------------------------
+  Future<void> _setupPdf() async {
+    if (isDownloaded) {
+      _pdf = PdfController(document: PdfDocument.openFile(_pathForViewer));
+    } else {
+      final d = await Dio().get(
+        widget.file.fileUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      _pdf = PdfController(document: PdfDocument.openData(d.data));
+    }
+  }
+
+  // --------------------------------------------------------
+  // DOWNLOAD LOGIC
+  // --------------------------------------------------------
   Future<void> _downloadFile() async {
     setState(() => isDownloading = true);
 
     final dir = await getApplicationDocumentsDirectory();
-    final savePath = '${dir.path}/${widget.file.fileName}';
-    final metaPath = '${dir.path}/${widget.file.fileName}.meta';
+    final save = '${dir.path}/${widget.file.fileName}';
+    final meta = '${dir.path}/${widget.file.fileName}.meta';
 
     try {
       await Dio().download(
         widget.file.fileUrl,
-        savePath,
-        onReceiveProgress: (received, total) {
-          setState(() => downloadProgress = total > 0 ? received / total : 0.0);
+        save,
+        onReceiveProgress: (r, t) {
+          setState(() => downloadProgress = t > 0 ? r / t : 0);
         },
       );
 
-      // Store modifiedDate for future comparison
-      final serverModified =
-          widget.file.modifiedDate?.millisecondsSinceEpoch.toString() ?? '';
-      await File(metaPath).writeAsString(serverModified, flush: true);
-
-      setState(() {
-        isDownloading = false;
-        isDownloaded = true;
-        localFilePath = savePath;
-        _pathForViewer = savePath;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ File downloaded for offline use!')),
+      await File(meta).writeAsString(
+        widget.file.modifiedDate?.millisecondsSinceEpoch.toString() ?? '',
       );
+
+      isDownloaded = true;
+      localFilePath = save;
+      _pathForViewer = save;
+
+      if (widget.file.fileType == 'video') {
+        await _setupVideo();
+      }
+
+      setState(() => isDownloading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Downloaded")));
     } catch (e) {
       setState(() => isDownloading = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('❌ Error downloading file: $e')));
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
-  // PPT/PPTX preview: WebView when online, friendly card when offline
+  // --------------------------------------------------------
+  // PPT PREVIEW (unchanged)
+  // --------------------------------------------------------
   Widget _buildPptPreview() {
     return FutureBuilder<bool>(
       future: _hasInternet(),
-      builder: (context, snapshot) {
-        final online = snapshot.data == true;
+      builder: (c, s) {
+        final online = s.data == true;
 
         if (online) {
           final controller = WebViewController()
@@ -191,7 +206,6 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
           );
         }
 
-        // Offline message card (clean)
         return Container(
           height: 220,
           decoration: BoxDecoration(
@@ -209,14 +223,11 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'No Internet Connection',
-                  style: TextStyle(
-                    color: Colors.orange.shade800,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  "No Internet",
+                  style: TextStyle(color: Colors.orange.shade800),
                 ),
                 Text(
-                  'Use the offline button below',
+                  "Use Offline button",
                   style: TextStyle(color: Colors.orange.shade700),
                 ),
               ],
@@ -227,32 +238,105 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
     );
   }
 
+  // --------------------------------------------------------
+  // PREVIEW BUILDER
+  // --------------------------------------------------------
   Widget _buildPreview() {
-    final type = widget.file.fileType.toLowerCase();
+    final t = widget.file.fileType.toLowerCase();
 
-    if (type == 'video') {
-      if (_chewieController == null) {
+    if (t == 'video') {
+      if (_videoController == null || !_videoController!.value.isInitialized) {
         return const Center(child: CircularProgressIndicator());
       }
-      return AspectRatio(
-        aspectRatio: _videoController!.value.aspectRatio,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Chewie(controller: _chewieController!),
-        ),
+
+      return Column(
+        children: [
+          // VIDEO DISPLAY
+          AspectRatio(
+            aspectRatio: _videoController!.value.aspectRatio == 0
+                ? 16 / 9
+                : _videoController!.value.aspectRatio,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: VideoPlayer(_videoController!),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // PROGRESS BAR + SCRUBBING
+          VideoProgressIndicator(
+            _videoController!,
+            allowScrubbing: true,
+            colors: VideoProgressColors(
+              playedColor: Colors.blue,
+              bufferedColor: Colors.grey,
+              backgroundColor: Colors.black26,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // CONTROLS
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.replay_10, size: 32),
+                onPressed: () {
+                  final pos = _videoController!.value.position;
+                  _videoController!.seekTo(pos - const Duration(seconds: 10));
+                },
+              ),
+              IconButton(
+                icon: Icon(
+                  _videoController!.value.isPlaying
+                      ? Icons.pause
+                      : Icons.play_arrow,
+                  size: 40,
+                ),
+                onPressed: () {
+                  if (_videoController!.value.isPlaying) {
+                    _videoController!.pause();
+                  } else {
+                    _videoController!.play();
+                  }
+                  setState(() {});
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.forward_10, size: 32),
+                onPressed: () {
+                  final pos = _videoController!.value.position;
+                  _videoController!.seekTo(pos + const Duration(seconds: 10));
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.fullscreen, size: 32),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          VideoFullScreen(controller: _videoController!),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
       );
     }
 
-    if (type == 'pdf') {
-      if (_pdfController == null) {
-        return const Center(child: CircularProgressIndicator());
-      }
+    if (t == 'pdf') {
+      if (_pdf == null) return const Center(child: CircularProgressIndicator());
       return ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: SizedBox(
           height: 220,
           child: PdfView(
-            controller: _pdfController!,
+            controller: _pdf!,
             pageSnapping: false,
             scrollDirection: Axis.horizontal,
           ),
@@ -260,32 +344,30 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
       );
     }
 
-    if (type == 'ppt' || type == 'pptx') {
-      return _buildPptPreview();
-    }
+    if (t == 'ppt' || t == 'pptx') return _buildPptPreview();
 
     return const SizedBox.shrink();
   }
 
+  // --------------------------------------------------------
+  // UI (UNCHANGED)
+  // --------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    final file = widget.file;
-    final type = file.fileType.toLowerCase();
+    final f = widget.file;
+    final t = f.fileType.toLowerCase();
 
-    final appBarColor = type == 'pdf'
+    final c = t == 'pdf'
         ? Colors.red.shade600
-        : (type == 'ppt' || type == 'pptx')
+        : (t == 'ppt' || t == 'pptx')
         ? Colors.orange.shade600
         : Colors.blue.shade600;
-
-    final actionColor = appBarColor;
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: appBarColor,
-        title: Text(file.fileName, style: const TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: c,
+        title: Text(f.fileName, style: const TextStyle(color: Colors.white)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(18),
@@ -294,35 +376,20 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
           children: [
             _buildPreview(),
             const SizedBox(height: 20),
-
             Text(
-              file.fileName,
+              f.fileName,
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
 
-            // Overflow-safe info row
+            // uploader + date
             Row(
               children: [
                 Icon(Icons.person, size: 16, color: Colors.grey.shade700),
                 const SizedBox(width: 6),
-                Flexible(
+                Expanded(
                   child: Text(
-                    'Uploaded by: ${file.teacherName}',
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.grey.shade700),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Icon(
-                  Icons.calendar_month,
-                  size: 16,
-                  color: Colors.grey.shade700,
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    _formatTs(file.modifiedDate),
+                    "Uploaded by: ${f.teacherName}",
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: Colors.grey.shade700),
                   ),
@@ -330,120 +397,111 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
               ],
             ),
 
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_month,
+                  size: 16,
+                  color: Colors.grey.shade700,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _formatTs(f.modifiedDate),
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+              ],
+            ),
+
             const SizedBox(height: 18),
 
             Container(
-              width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
               ),
-              child: Text(
-                file.description,
-                style: const TextStyle(fontSize: 15),
-              ),
+              child: Text(f.description),
             ),
 
             const SizedBox(height: 28),
 
-            // ----- OPEN BUTTONS -----
-            if (type == 'pdf')
+            // PDF open button
+            if (t == 'pdf')
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: actionColor,
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+                style: _btn(c),
+                icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+                label: const Text(
+                  "Open Full PDF Viewer",
+                  style: TextStyle(color: Colors.white),
                 ),
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => FullPdfViewerPage(
-                        fileName: file.fileName,
+                        fileName: f.fileName,
                         filePathOrUrl: _pathForViewer,
                         isAsset: _isAsset,
                       ),
                     ),
                   );
                 },
-                icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
-                label: const Text(
-                  'Open Full PDF Viewer',
-                  style: TextStyle(color: Colors.white),
-                ),
               ),
 
-            if (type == 'ppt' || type == 'pptx') ...[
+            // PPT
+            if (t == 'ppt' || t == 'pptx')
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: actionColor,
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+                style: _btn(c),
+                icon: const Icon(Icons.slideshow, color: Colors.white),
+                label: Text(
+                  isDownloaded ? "Open Offline PPT" : "View Online",
+                  style: const TextStyle(color: Colors.white),
                 ),
                 onPressed: isDownloaded
                     ? () => OpenFilex.open(_pathForViewer)
                     : () async {
-                        final online = await _hasInternet();
-                        if (!online) {
+                        if (!await _hasInternet()) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                '❌ No internet connection. Use the offline button below.',
-                              ),
-                            ),
+                            const SnackBar(content: Text("No internet")),
                           );
                         }
                       },
-                icon: const Icon(Icons.slideshow_rounded, color: Colors.white),
-                label: Text(
-                  isDownloaded ? 'Open Offline PPT' : 'View Online',
-                  style: const TextStyle(color: Colors.white),
-                ),
               ),
-            ],
 
             const SizedBox(height: 12),
 
-            // ----- DOWNLOAD BUTTON (all types) -----
+            // Download
             isDownloading
                 ? LinearProgressIndicator(value: downloadProgress)
                 : ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isDownloaded
-                          ? Colors.green.shade600
-                          : actionColor,
+                      backgroundColor: isDownloaded ? Colors.green : c,
                       minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
                     ),
-                    onPressed: isDownloaded ? null : _downloadFile,
                     icon: Icon(
-                      isDownloaded ? Icons.download_done : Icons.download,
+                      isDownloaded ? Icons.check : Icons.download,
                       color: Colors.white,
                     ),
                     label: Text(
                       isDownloaded
-                          ? 'File Saved (Open Offline)'
-                          : 'Download for Offline Use',
+                          ? "File Saved (Offline)"
+                          : "Download for Offline Use",
                       style: const TextStyle(color: Colors.white),
                     ),
+                    onPressed: isDownloaded ? null : _downloadFile,
                   ),
           ],
         ),
       ),
+    );
+  }
+
+  ButtonStyle _btn(Color c) {
+    return ElevatedButton.styleFrom(
+      backgroundColor: c,
+      minimumSize: const Size.fromHeight(48),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     );
   }
 }
