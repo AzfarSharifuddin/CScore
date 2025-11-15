@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 import 'package:cscore/AccountModule/user_profile.dart'; // 🔹 FIXED: Uncommented this line
+import 'package:cscore/DashboardModule/Screens/student_profile.dart';
 
 // --- Mock Classes (so the file is self-contained) ---
 // You can remove these if you have the real files imported.
@@ -233,7 +234,7 @@ class StudentDashboard extends StatelessWidget {
              // FIXED: Enabled this navigation and used 'push'
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const UserProfile()),
+              MaterialPageRoute(builder: (context) => const StudentProfile()),
             );
           }
         },

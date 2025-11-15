@@ -7,7 +7,7 @@ import '../Screens/create_announcement.dart';
 import '../Screens/manage_activities.dart';
 import '../Models/Announcement.dart';
 import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
-import 'package:cscore/AccountModule/user_profile.dart';
+import 'package:cscore/DashboardModule/Screens/teacher_profile.dart';
 
 class TeacherDashboard extends StatelessWidget {
   const TeacherDashboard({super.key});
@@ -229,7 +229,7 @@ class TeacherDashboard extends StatelessWidget {
             } else if (index == 2) {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const UserProfile()),
+                MaterialPageRoute(builder: (_) => const TeacherProfile()),
               );
             }
           },
