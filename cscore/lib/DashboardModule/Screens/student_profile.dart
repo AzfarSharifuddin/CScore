@@ -26,8 +26,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   Future<void> _loadUser() async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
+
     final doc = await _firestore.collection('users').doc(uid).get();
     if (!mounted) return;
+
     setState(() {
       userData = doc.exists ? doc.data() as Map<String, dynamic>? : null;
       _loading = false;
@@ -35,7 +37,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   void _openEdit() async {
-    // Open the shared edit page. After editing, reload profile.
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const ProfileEditPage()),
@@ -56,7 +57,8 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: const Text('User Profile', style: TextStyle(color: Colors.black87)),
+        title:
+            const Text('User Profile', style: TextStyle(color: Colors.black87)),
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: _loading
@@ -70,19 +72,39 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                       const CircleAvatar(
                         radius: 55,
                         backgroundColor: Colors.blueGrey,
-                        child: Icon(Icons.person, size: 60, color: Colors.white),
+                        child: Icon(Icons.person,
+                            size: 60, color: Colors.white),
                       ),
                       const SizedBox(height: 16),
+
+                      // ⭐️ FIXED: CENTERED NAME
                       Text(
                         userData!['name'] ?? 'No name',
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+
                       const SizedBox(height: 6),
-                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        const Icon(Icons.school_rounded, size: 18, color: Colors.black54),
-                        const SizedBox(width: 6),
-                        Text(userData!['role'] ?? 'Student', style: const TextStyle(fontSize: 15, color: Colors.black54)),
-                      ]),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.school_rounded,
+                              size: 18, color: Colors.black54),
+                          const SizedBox(width: 6),
+                          Text(
+                            userData!['role'] ?? 'Student',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+
                       const SizedBox(height: 20),
 
                       Container(
@@ -92,15 +114,24 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: Colors.black12),
                         ),
-                        child: Column(children: [
-                          Row(children: [
-                            const Icon(Icons.email_rounded, color: Colors.black87),
-                            const SizedBox(width: 12),
-                            const Text('Email', style: TextStyle(fontWeight: FontWeight.w600)),
-                            const Spacer(),
-                            Text(userData!['email'] ?? ''),
-                          ])
-                        ]),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.email_rounded,
+                                    color: Colors.black87),
+                                const SizedBox(width: 12),
+                                const Text(
+                                  'Email',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                const Spacer(),
+                                Text(userData!['email'] ?? ''),
+                              ],
+                            )
+                          ],
+                        ),
                       ),
 
                       const SizedBox(height: 20),
@@ -117,9 +148,11 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                         icon: Icons.lock_outline_rounded,
                         text: 'Change Password',
                         onPressed: () async {
-                          // push to edit page's change password flow
                           await Navigator.push(
-                              context, MaterialPageRoute(builder: (_) => const ProfileEditPage(openPassword: true)));
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const ProfileEditPage(
+                                      openPassword: true)));
                           await _loadUser();
                         },
                       ),
@@ -158,7 +191,20 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.black12),
           ),
-          child: Row(children: [Icon(icon, color: iconColor), const SizedBox(width: 12), Text(text, style: TextStyle(fontSize: 16, color: textColor, fontWeight: FontWeight.w500))]),
+          child: Row(
+            children: [
+              Icon(icon, color: iconColor),
+              const SizedBox(width: 12),
+              Text(
+                text,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: textColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );

@@ -84,7 +84,7 @@ class _ManageQualificationPageState extends State<ManageQualificationPage> {
     await _firestore
         .collection('users')
         .doc(uid)
-        .collection('qualifications')
+        .collection('qualification')
         .doc(id)
         .delete();
   }
