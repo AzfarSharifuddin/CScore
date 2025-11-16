@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 import 'package:cscore/DashboardModule/Screens/student_profile.dart';
 
+
 // --- Mock classes for Activities & Materials only ---
 class LocalDataService {
   List<Activity> getActivities() => [
@@ -263,9 +264,10 @@ class StudentDashboard extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => ViewProgressScreen()));
           } else if (index == 2) {
             Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const StudentProfile()));
+              context,
+              MaterialPageRoute(builder: (context) => const StudentProfilePage()),
+            );
+               
           }
         },
         items: const [

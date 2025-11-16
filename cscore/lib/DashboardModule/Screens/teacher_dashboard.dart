@@ -230,7 +230,7 @@ class TeacherDashboard extends StatelessWidget {
             } else if (index == 2) {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const TeacherProfile()),
+                MaterialPageRoute(builder: (_) => const TeacherProfilePage()),
               );
             }
           },
