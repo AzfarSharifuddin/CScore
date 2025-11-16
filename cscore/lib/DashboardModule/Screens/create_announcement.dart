@@ -38,13 +38,13 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
     String date = _dateController.text.trim();
 
     if (title.isEmpty || desc.isEmpty || date.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill all fields")),
+      );
       return;
     }
 
-    await FirebaseFirestore.instance.collection('Announcements').add({
+    await FirebaseFirestore.instance.collection('announcement').add({
       'Title': title,
       'Description': desc,
       'Date': date,
@@ -96,16 +96,10 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
                 filled: true,
                 fillColor: Colors.white,
                 hintText: "Enter announcement title",
-                hintStyle: TextStyle(color: Colors.grey[500]),
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Colors.blue, width: 1.3),
                 ),
               ),
             ),
@@ -123,16 +117,10 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
                 filled: true,
                 fillColor: Colors.white,
                 hintText: "Enter description...",
-                hintStyle: TextStyle(color: Colors.grey[500]),
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Colors.blue, width: 1.3),
                 ),
               ),
             ),
@@ -146,8 +134,7 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
             GestureDetector(
               onTap: _pickDate,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
@@ -158,7 +145,9 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
                       ? "Select Date"
                       : _dateController.text,
                   style: TextStyle(
-                      fontSize: 15, color: _dateController.text.isEmpty ? Colors.grey[500] : Colors.black87),
+                    fontSize: 15,
+                    color: _dateController.text.isEmpty ? Colors.grey : Colors.black87,
+                  ),
                 ),
               ),
             ),
@@ -175,14 +164,14 @@ class _CreateAnnouncementPageState extends State<CreateAnnouncementPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  elevation: 2,
                 ),
                 child: const Text(
                   "Submit",
                   style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: Colors.white),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),

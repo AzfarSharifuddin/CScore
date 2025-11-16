@@ -179,7 +179,7 @@ class TeacherDashboard extends StatelessWidget {
 
             StreamBuilder(
               stream: FirebaseFirestore.instance
-                  .collection('Announcements')
+                  .collection('announcement') // 🔥 UPDATED COLLECTION
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
@@ -192,7 +192,8 @@ class TeacherDashboard extends StatelessWidget {
 
                 return Column(
                   children: snapshot.data!.docs.map((doc) {
-                    Announcement announcement = Announcement.fromFirestore(doc);
+                    Announcement announcement =
+                        Announcement.fromFirestore(doc);
                     return AnnouncementCard(announcement: announcement);
                   }).toList(),
                 );

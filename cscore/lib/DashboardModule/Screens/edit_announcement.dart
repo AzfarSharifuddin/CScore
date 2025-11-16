@@ -20,25 +20,24 @@ class _EditAnnouncementPageState extends State<EditAnnouncementPage> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.announcement.title);
-    _descriptionController = TextEditingController(
-      text: widget.announcement.description,
-    );
+    _descriptionController =
+        TextEditingController(text: widget.announcement.description);
     _dateController = TextEditingController(text: widget.announcement.date);
   }
 
   Future<void> _saveChanges() async {
     await FirebaseFirestore.instance
-        .collection('Announcements')
-        .doc(widget.announcement.id)
+        .collection('announcement') // 🔥 UPDATED COLLECTION NAME
+        .doc(widget.announcement.id) // 🔥 NOW VALID because model updated
         .update({
-          'Title': _titleController.text.trim(),
-          'Description': _descriptionController.text.trim(),
-          'Date': _dateController.text.trim(),
-        });
+      'Title': _titleController.text.trim(),
+      'Description': _descriptionController.text.trim(),
+      'Date': _dateController.text.trim(),
+    });
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("✅ Announcement Updated")));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Announcement Updated Successfully")),
+    );
 
     Navigator.pop(context);
   }

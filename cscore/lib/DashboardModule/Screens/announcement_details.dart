@@ -11,12 +11,12 @@ class AnnouncementDetailsPage extends StatelessWidget {
 
   Future<void> _deleteAnnouncement(BuildContext context) async {
     await FirebaseFirestore.instance
-        .collection('Announcements')
+        .collection('announcement') // 🔥 UPDATED COLLECTION NAME
         .doc(announcement.id)
         .delete();
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("✅ Announcement Deleted")),
+      const SnackBar(content: Text("Announcement Deleted Successfully")),
     );
 
     Navigator.pop(context);
@@ -73,7 +73,7 @@ class AnnouncementDetailsPage extends StatelessWidget {
             Divider(color: Colors.grey[300], thickness: 1),
             const SizedBox(height: 16),
 
-            /// Description Text
+            /// Description
             Text(
               announcement.description,
               style: const TextStyle(fontSize: 16, height: 1.4),
@@ -81,14 +81,14 @@ class AnnouncementDetailsPage extends StatelessWidget {
 
             const Spacer(),
 
-            /// Only show edit + delete if user is the creator
+            /// Show Edit/Delete only if creator
             if (user != null && user.uid == announcement.createdBy) ...[
               SizedBox(
                 width: double.infinity,
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(22),
-                    color: const Color(0xFFDDEAF7), // soft blue
+                    color: const Color(0xFFDDEAF7),
                   ),
                   child: TextButton(
                     onPressed: () {

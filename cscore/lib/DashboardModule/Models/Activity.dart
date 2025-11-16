@@ -1,7 +1,7 @@
 class Activity {
-  String title;
-  String date;
-  String notes;
+  final String title;
+  final String date;
+  final String notes;
 
   Activity({
     required this.title,
@@ -9,7 +9,7 @@ class Activity {
     required this.notes,
   });
 
-  // Convert object to map (for JSON/Firebase compatibility)
+  // Convert object to Firestore map
   Map<String, dynamic> toMap() {
     return {
       'title': title,
@@ -18,7 +18,7 @@ class Activity {
     };
   }
 
-  // Create object from map
+  // Create object from Firestore map
   factory Activity.fromMap(Map<String, dynamic> map) {
     return Activity(
       title: map['title'] ?? '',
@@ -27,4 +27,3 @@ class Activity {
     );
   }
 }
-
