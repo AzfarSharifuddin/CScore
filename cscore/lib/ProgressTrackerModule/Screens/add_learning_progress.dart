@@ -9,7 +9,8 @@ class AddLearningProgressPage extends StatefulWidget {
   const AddLearningProgressPage({super.key});
 
   @override
-  State<AddLearningProgressPage> createState() => _AddLearningProgressPageState();
+  State<AddLearningProgressPage> createState() =>
+      _AddLearningProgressPageState();
 }
 
 class _AddLearningProgressPageState extends State<AddLearningProgressPage> {
@@ -35,7 +36,9 @@ class _AddLearningProgressPageState extends State<AddLearningProgressPage> {
 
   Future<void> _fetchTopicsAndFiles() async {
     try {
-      final tutorialsSnap = await FirebaseFirestore.instance.collection('tutorials').get();
+      final tutorialsSnap = await FirebaseFirestore.instance
+          .collection('tutorial')
+          .get();
       final Map<String, List<String>> topicMap = {};
       for (final topicDoc in tutorialsSnap.docs) {
         final topicData = topicDoc.data();
@@ -53,13 +56,20 @@ class _AddLearningProgressPageState extends State<AddLearningProgressPage> {
       }
       if (mounted) setState(() => topicFiles = topicMap);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load tutorial files: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load tutorial files: $e')),
+        );
     }
   }
 
   Future<void> _saveProgress() async {
     if (_selectedTopic == null || _selectedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select both a topic and a learning file")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please select both a topic and a learning file"),
+        ),
+      );
       return;
     }
 
@@ -77,11 +87,18 @@ class _AddLearningProgressPageState extends State<AddLearningProgressPage> {
 
       await ProgressService().addProgress(userId, record);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Learning progress added successfully!")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Learning progress added successfully!"),
+          ),
+        );
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -97,7 +114,11 @@ class _AddLearningProgressPageState extends State<AddLearningProgressPage> {
         backgroundColor: const Color(0xFFF5F5F7),
         title: const Text(
           "Add Learning Progress",
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 22),
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
         ),
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -109,52 +130,141 @@ class _AddLearningProgressPageState extends State<AddLearningProgressPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Select Topic", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const Text(
+                    "Select Topic",
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _selectedTopic,
-                    items: topicFiles.keys.map((topic) => DropdownMenuItem(value: topic, child: Text(topic))).toList(),
+                    items: topicFiles.keys
+                        .map(
+                          (topic) => DropdownMenuItem(
+                            value: topic,
+                            child: Text(topic),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (val) {
                       setState(() {
                         _selectedTopic = val;
                         _selectedFile = null;
                       });
                     },
-                    decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  const Text("Select Learning File", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const Text(
+                    "Select Learning File",
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _selectedFile,
-                    items: (_selectedTopic == null ? <String>[] : (topicFiles[_selectedTopic!] ?? <String>[])).map((f) => DropdownMenuItem(value: f, child: Text(f))).toList(),
+                    items:
+                        (_selectedTopic == null
+                                ? <String>[]
+                                : (topicFiles[_selectedTopic!] ?? <String>[]))
+                            .map(
+                              (f) => DropdownMenuItem(value: f, child: Text(f)),
+                            )
+                            .toList(),
                     onChanged: (val) => setState(() => _selectedFile = val),
-                    decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  if (_selectedTopic != null && (topicFiles[_selectedTopic!] ?? []).isEmpty)
-                    const Padding(padding: EdgeInsets.only(bottom: 12), child: Text('No files uploaded yet for this topic.', style: TextStyle(color: Colors.grey))),
+                  if (_selectedTopic != null &&
+                      (topicFiles[_selectedTopic!] ?? []).isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'No files uploaded yet for this topic.',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
                   const SizedBox(height: 8),
-                  const Text("Learning Status", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const Text(
+                    "Learning Status",
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _status,
                     items: const [
-                      DropdownMenuItem(value: "In Progress", child: Text("In Progress")),
-                      DropdownMenuItem(value: "Completed", child: Text("Completed")),
-                      DropdownMenuItem(value: "Not Started", child: Text("Not Started")),
+                      DropdownMenuItem(
+                        value: "In Progress",
+                        child: Text("In Progress"),
+                      ),
+                      DropdownMenuItem(
+                        value: "Completed",
+                        child: Text("Completed"),
+                      ),
+                      DropdownMenuItem(
+                        value: "Not Started",
+                        child: Text("Not Started"),
+                      ),
                     ],
-                    onChanged: (val) => setState(() => _status = val ?? 'In Progress'),
-                    decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                    onChanged: (val) =>
+                        setState(() => _status = val ?? 'In Progress'),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  TextField(controller: scoreCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Score (optional)", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                  TextField(
+                    controller: scoreCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "Score (optional)",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 48), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                     onPressed: _isLoading ? null : _saveProgress,
-                    child: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text("Save"),
-                  )
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text("Save"),
+                  ),
                 ],
               ),
             ),

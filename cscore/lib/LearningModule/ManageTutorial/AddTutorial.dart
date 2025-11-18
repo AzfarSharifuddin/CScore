@@ -1,7 +1,3 @@
-// --------------------------------------------------------------
-// AddTutorial.dart – FINAL VERSION (Firebase Storage + Compression)
-// --------------------------------------------------------------
-
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -52,7 +48,7 @@ class _AddTutorialPageState extends State<AddTutorialPage> {
   // Fetch existing subtopics for dropdown
   // --------------------------------------------------------------
   Future<List<String>> _fetchSubtopics() async {
-    final snap = await FirebaseFirestore.instance.collection("tutorials").get();
+    final snap = await FirebaseFirestore.instance.collection("tutorial").get();
 
     return snap.docs.map((e) => e.id).toList();
   }
@@ -253,7 +249,7 @@ class _AddTutorialPageState extends State<AddTutorialPage> {
 
       // ----------------------------- SAVE FIRESTORE -----------------------------
       await FirebaseFirestore.instance
-          .collection("tutorials")
+          .collection("tutorial")
           .doc(selectedSubtopic)
           .collection("files")
           .add({

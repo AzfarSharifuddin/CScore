@@ -31,7 +31,7 @@ class ViewTutorialPage extends StatelessWidget {
 
   Stream<List<Tutorial>> getTutorialsStream() {
     return FirebaseFirestore.instance
-        .collection('tutorials')
+        .collection('tutorial')
         .snapshots()
         .asyncMap((snapshot) async {
           final List<Tutorial> tutorials = [];
