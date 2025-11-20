@@ -48,7 +48,7 @@ class QuizService {
       });
 
       // 🆕 ALSO create activity for dashboard
-      await _db.collection('activities').add({
+      await _db.collection('activity').add({
         'title': title,
         'description': description,
         'deadline': Timestamp.fromDate(deadline),

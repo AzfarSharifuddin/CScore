@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart'; // 🟢 Added for formatting
 
 class ActivityDetailsPage extends StatelessWidget {
   final String activityId;
@@ -19,7 +20,7 @@ class ActivityDetailsPage extends StatelessWidget {
       ),
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
-            .collection('activity') // updated
+            .collection('activity')
             .doc(activityId)
             .get(),
         builder: (context, snapshot) {
@@ -28,12 +29,16 @@ class ActivityDetailsPage extends StatelessWidget {
           }
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
+          final deadlineDate = (data['deadline'] as Timestamp).toDate();
+          final formattedDate = DateFormat('yyyy-MM-dd').format(deadlineDate);
+          final daysLeft = deadlineDate.difference(DateTime.now()).inDays;
 
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Card(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               elevation: 3,
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -49,27 +54,53 @@ class ActivityDetailsPage extends StatelessWidget {
                           child: Text(
                             data['title'] ?? '',
                             style: const TextStyle(
-                                fontSize: 22, fontWeight: FontWeight.bold),
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
 
-                    Text(
-                      "Due: ${(data['deadline'] as Timestamp).toDate().toString().substring(0, 10)}",
-                      style: const TextStyle(
-                          fontSize: 16, color: Colors.redAccent),
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today, color: Colors.redAccent),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Due: $formattedDate",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
 
-                    const Divider(height: 25),
+                    if (daysLeft >= 0) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        "$daysLeft days left",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: daysLeft <= 3 ? Colors.red : Colors.grey[700],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+
+                    const Divider(height: 30),
 
                     const Text(
                       "Description",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
+
                     const SizedBox(height: 5),
+
                     Text(
                       data['description'] ?? '',
                       style: const TextStyle(fontSize: 16),
