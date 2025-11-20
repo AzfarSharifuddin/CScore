@@ -19,7 +19,7 @@ class ActivityDetailsPage extends StatelessWidget {
       ),
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
-            .collection('activity')   // ← your corrected collection name
+            .collection('activity') // updated
             .doc(activityId)
             .get(),
         builder: (context, snapshot) {
@@ -67,16 +67,13 @@ class ActivityDetailsPage extends StatelessWidget {
 
                     const Text(
                       "Description",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 5),
                     Text(
                       data['description'] ?? '',
                       style: const TextStyle(fontSize: 16),
                     ),
-
-                    // 🚫 Button removed — no more Go to Quiz
                   ],
                 ),
               ),

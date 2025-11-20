@@ -35,12 +35,9 @@ class TeacherDashboard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // -------------------------------------------------------------
-            // TOP BUTTONS
-            // -------------------------------------------------------------
+
             Row(
               children: [
-                // NEW ANNOUNCEMENT
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
@@ -72,7 +69,6 @@ class TeacherDashboard extends StatelessWidget {
 
                 const SizedBox(width: 12),
 
-                // MANAGE ACTIVITIES
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
@@ -104,7 +100,6 @@ class TeacherDashboard extends StatelessWidget {
 
                 const SizedBox(width: 12),
 
-                // FORUM BUTTON
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
@@ -141,9 +136,6 @@ class TeacherDashboard extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // -------------------------------------------------------------
-            // CLASS TITLE
-            // -------------------------------------------------------------
             const Text(
               'Class: Programming',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -151,9 +143,6 @@ class TeacherDashboard extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // -------------------------------------------------------------
-            // NEW ACTIVITIES SECTION (Firestore)
-            // -------------------------------------------------------------
             const Text(
               'New Activities',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -162,7 +151,7 @@ class TeacherDashboard extends StatelessWidget {
 
             StreamBuilder(
               stream: FirebaseFirestore.instance
-                  .collection('activities')
+                  .collection('activity')  // 🔹 UPDATED HERE
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
@@ -185,9 +174,6 @@ class TeacherDashboard extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // -------------------------------------------------------------
-            // ANNOUNCEMENTS SECTION
-            // -------------------------------------------------------------
             const Text(
               'Announcements',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -220,9 +206,6 @@ class TeacherDashboard extends StatelessWidget {
         ),
       ),
 
-      // -------------------------------------------------------------
-      // BOTTOM NAVIGATION BAR
-      // -------------------------------------------------------------
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(

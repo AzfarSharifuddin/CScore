@@ -2,7 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 import 'package:cscore/DashboardModule/Screens/student_profile.dart';
-import 'package:cscore/DashboardModule/Screens/activity_details.dart'; // 🔹 Add this import
+import 'activity_details.dart';
+
+class Announcement {
+  final String title;
+  final String description;
+  final String date;
+
+  Announcement({
+    required this.title,
+    required this.description,
+    required this.date,
+  });
+}
 
 class StudentDashboard extends StatelessWidget {
   const StudentDashboard({super.key});
@@ -32,7 +44,7 @@ class StudentDashboard extends StatelessWidget {
                       Navigator.pushNamed(context, '/learning');
                     },
                     icon: const Icon(Icons.school_rounded),
-                    label: const FittedBox(child: Text('Modules')),
+                    label: const Text('Modules'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -42,7 +54,7 @@ class StudentDashboard extends StatelessWidget {
                       Navigator.pushNamed(context, '/quiz');
                     },
                     icon: const Icon(Icons.quiz_rounded),
-                    label: const FittedBox(child: Text('Quizzes')),
+                    label: const Text('Quizzes'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -52,7 +64,7 @@ class StudentDashboard extends StatelessWidget {
                       Navigator.pushNamed(context, '/forum');
                     },
                     icon: const Icon(Icons.forum_rounded),
-                    label: const FittedBox(child: Text('Forum')),
+                    label: const Text('Forum'),
                   ),
                 ),
               ],
@@ -65,7 +77,7 @@ class StudentDashboard extends StatelessWidget {
 
             StreamBuilder(
               stream: FirebaseFirestore.instance
-                  .collection('activities')
+                  .collection('activity') // updated
                   .orderBy('deadline')
                   .snapshots(),
               builder: (context, snapshot) {
@@ -79,35 +91,30 @@ class StudentDashboard extends StatelessWidget {
                 return Column(
                   children: snapshot.data!.docs.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
-
-                    return InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ActivityDetailsPage(activityId: doc.id),
-                          ),
-                        );
-                      },
-                      child: Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        child: ListTile(
-                          leading: Icon(Icons.event_note,
-                              color: Colors.blue[600]),
-                          title: Text(
-                            data['title'] ?? '',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                          subtitle: Text(
-                            "${(data['deadline'] as Timestamp).toDate().toString().substring(0, 10)}\n"
-                            "${data['description'] ?? ''}",
-                          ),
-                          isThreeLine: true,
+                    return Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      child: ListTile(
+                        title: Text(data['title'] ?? 'No Title'),
+                        subtitle: Text(data['description'] ?? ''),
+                        trailing: Text(
+                          (data['deadline'] as Timestamp)
+                              .toDate()
+                              .toString()
+                              .substring(0, 10),
+                          style: const TextStyle(fontSize: 12),
                         ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ActivityDetailsPage(
+                                activityId: doc.id,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     );
                   }).toList(),
@@ -115,7 +122,7 @@ class StudentDashboard extends StatelessWidget {
               },
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             const Text('Announcements',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
@@ -137,21 +144,17 @@ class StudentDashboard extends StatelessWidget {
                 return Column(
                   children: snapshot.data!.docs.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
+
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
+                      elevation: 2,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      elevation: 2,
                       child: ListTile(
-                        title: Text(
-                          data['Title'] ?? '',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                        title: Text(data['Title'] ?? ''),
                         subtitle: Text(data['Description'] ?? ''),
                         trailing: Text(
                           data['Date'] ?? '',
-                          style:
-                              const TextStyle(fontSize: 12, color: Colors.grey),
+                          style: const TextStyle(fontSize: 12),
                         ),
                       ),
                     );
@@ -164,10 +167,8 @@ class StudentDashboard extends StatelessWidget {
       ),
 
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
         currentIndex: 1,
         selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.black,
         onTap: (index) {
           if (index == 0) {
             Navigator.push(context,
