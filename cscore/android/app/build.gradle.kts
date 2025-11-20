@@ -11,12 +11,14 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        // ⭐ UPGRADE: Use Java 17 for better compatibility with modern Android/Flutter builds
+        sourceCompatibility = JavaVersion.VERSION_17 
+        targetCompatibility = JavaVersion.VERSION_17 
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        // ⭐ UPGRADE: Match the jvmTarget to the compileOptions
+        jvmTarget = JavaVersion.VERSION_17.toString() 
     }
 
     defaultConfig {
@@ -38,4 +40,9 @@ flutter {
     source = "../.."
 }
 
-apply(plugin = "com.google.gms.google-services")   // ✅ ONLY HERE
+// NOTE: The plugins block above already handles this line. You can safely remove one.
+// Since you are using the modern plugins block, you can remove this legacy line.
+// apply(plugin = "com.google.gms.google-services") // ❌ Can be removed if the plugins block works
+
+// You should only need to keep the 'apply(plugin = ...)' line if your current build 
+// is failing to pick up 'com.google.gms.google-services' from the plugins block.
