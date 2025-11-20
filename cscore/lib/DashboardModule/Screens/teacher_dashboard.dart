@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../Services/Firestore_services.dart';
 import '../Widgets/Announcement_card.dart';
 import '../Widgets/Activity_card.dart';
 import '../Screens/create_announcement.dart';
 import '../Screens/manage_activities.dart';
 import '../Models/Announcement.dart';
+import '../Models/Activity.dart';
 import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 import 'package:cscore/DashboardModule/Screens/teacher_profile.dart';
 
@@ -14,8 +14,6 @@ class TeacherDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = LocalDataService();
-
     return Scaffold(
       backgroundColor: Colors.grey[50],
 
@@ -38,7 +36,7 @@ class TeacherDashboard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // -------------------------------------------------------------
-            // TOP BUTTONS (Three buttons in ONE ROW)
+            // TOP BUTTONS
             // -------------------------------------------------------------
             Row(
               children: [
@@ -115,18 +113,15 @@ class TeacherDashboard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE3DFF7), // Soft purple
+                        color: const Color(0xFFE3DFF7),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       alignment: Alignment.center,
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.forum_rounded,
-                            color: Colors.black87,
-                            size: 20,
-                          ),
+                          Icon(Icons.forum_rounded,
+                              color: Colors.black87, size: 20),
                           SizedBox(width: 8),
                           Text(
                             "Forum",
@@ -157,7 +152,7 @@ class TeacherDashboard extends StatelessWidget {
             const SizedBox(height: 20),
 
             // -------------------------------------------------------------
-            // MANAGE ACTIVITIES LIST
+            // NEW ACTIVITIES SECTION (Firestore)
             // -------------------------------------------------------------
             const Text(
               'New Activities',
@@ -165,11 +160,33 @@ class TeacherDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            ...data.getActivities().map((a) => ActivityCard(activity: a)),
+            StreamBuilder(
+              stream: FirebaseFirestore.instance
+                  .collection('activities')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Text("No activities available.");
+                }
+
+                return Column(
+                  children: snapshot.data!.docs.map((doc) {
+                    final activity = Activity.fromFirestore(doc);
+                    return ActivityCard(activity: activity);
+                  }).toList(),
+                );
+              },
+            ),
+
             const SizedBox(height: 24),
 
             // -------------------------------------------------------------
-            // ANNOUNCEMENTS
+            // ANNOUNCEMENTS SECTION
             // -------------------------------------------------------------
             const Text(
               'Announcements',
@@ -179,7 +196,7 @@ class TeacherDashboard extends StatelessWidget {
 
             StreamBuilder(
               stream: FirebaseFirestore.instance
-                  .collection('announcement') // 🔥 UPDATED COLLECTION
+                  .collection('announcement')
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
