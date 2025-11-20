@@ -9,6 +9,7 @@ class TutorialFile {
   final String description;
   final String thumbnailUrl;
   final Timestamp? modifiedDate;
+  final String storagePath;
   String? localModifiedDate; // used for offline version validation
 
   TutorialFile({
@@ -18,6 +19,7 @@ class TutorialFile {
     required this.teacherName,
     required this.uploadedBy,
     required this.description,
+    required this.storagePath,
     required this.thumbnailUrl,
     this.modifiedDate,
     this.localModifiedDate,

@@ -10,14 +10,23 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
+import 'viewpptxonline.dart';
 import 'full_pdf_viewer_page.dart';
 import 'tutorialmodel.dart';
 import 'videoFullScreen.dart';
 
 class TutorialFileViewer extends StatefulWidget {
   final TutorialFile file;
-  const TutorialFileViewer({super.key, required this.file});
+  final String subtopic; // <-- subtopic for Firestore path
+
+  const TutorialFileViewer({
+    super.key,
+    required this.file,
+    required this.subtopic,
+  });
 
   @override
   State<TutorialFileViewer> createState() => _TutorialFileViewerState();
@@ -90,7 +99,7 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
   }
 
   // --------------------------------------------------------
-  // *** FIXED VIDEO SETUP ***
+  // VIDEO SETUP
   // --------------------------------------------------------
   Future<void> _setupVideo() async {
     _videoController?.dispose();
@@ -180,6 +189,58 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
   }
 
   // --------------------------------------------------------
+  // SAFE DELETE (ONLY THIS FILE)
+  // --------------------------------------------------------
+  Future<void> _deleteFile() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null || user.uid != widget.file.uploadedBy) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("You are not allowed to delete this file.")),
+        );
+        return;
+      }
+
+      // 1) Delete from Storage (use URL directly)
+      if (widget.file.fileUrl.isNotEmpty) {
+        try {
+          await FirebaseStorage.instance
+              .refFromURL(widget.file.fileUrl)
+              .delete();
+        } catch (e) {
+          // If file already gone, just log and continue
+          debugPrint("Storage delete failed (continuing): $e");
+        }
+      }
+
+      // 2) Delete ONLY the matching document (first match) in Firestore
+      final snap = await FirebaseFirestore.instance
+          .collection('tutorial')
+          .doc(widget.subtopic)
+          .collection('files')
+          .where('fileUrl', isEqualTo: widget.file.fileUrl)
+          .limit(1)
+          .get();
+
+      if (snap.docs.isNotEmpty) {
+        await snap.docs.first.reference.delete();
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tutorial deleted successfully!')),
+      );
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        Navigator.pop(context, true);  // return true to indicate deletion happened
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Delete failed: $e')),
+      );
+    }
+  }
+
+  // --------------------------------------------------------
   // PPT PREVIEW (unchanged)
   // --------------------------------------------------------
   Widget _buildPptPreview() {
@@ -193,7 +254,7 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
             ..setJavaScriptMode(JavaScriptMode.unrestricted)
             ..loadRequest(
               Uri.parse(
-                'https://view.officeapps.live.com/op/embed.aspx?src=${Uri.encodeComponent(widget.file.fileUrl)}',
+                'https://docs.google.com/gview?embedded=true&url=${Uri.encodeComponent(widget.file.fileUrl)}',
               ),
             );
 
@@ -239,7 +300,7 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
   }
 
   // --------------------------------------------------------
-  // PREVIEW BUILDER
+  // PREVIEW BUILDER (unchanged UI)
   // --------------------------------------------------------
   Widget _buildPreview() {
     final t = widget.file.fileType.toLowerCase();
@@ -285,7 +346,8 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
                 icon: const Icon(Icons.replay_10, size: 32),
                 onPressed: () {
                   final pos = _videoController!.value.position;
-                  _videoController!.seekTo(pos - const Duration(seconds: 10));
+                  _videoController!
+                      .seekTo(pos - const Duration(seconds: 10));
                 },
               ),
               IconButton(
@@ -308,7 +370,8 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
                 icon: const Icon(Icons.forward_10, size: 32),
                 onPressed: () {
                   final pos = _videoController!.value.position;
-                  _videoController!.seekTo(pos + const Duration(seconds: 10));
+                  _videoController!
+                      .seekTo(pos + const Duration(seconds: 10));
                 },
               ),
               IconButton(
@@ -350,7 +413,7 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
   }
 
   // --------------------------------------------------------
-  // UI (UNCHANGED)
+  // UI (original + delete icon)
   // --------------------------------------------------------
   @override
   Widget build(BuildContext context) {
@@ -360,8 +423,10 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
     final c = t == 'pdf'
         ? Colors.red.shade600
         : (t == 'ppt' || t == 'pptx')
-        ? Colors.orange.shade600
-        : Colors.blue.shade600;
+            ? Colors.orange.shade600
+            : Colors.blue.shade600;
+
+    final currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -369,6 +434,39 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
         backgroundColor: c,
         title: Text(f.fileName, style: const TextStyle(color: Colors.white)),
       ),
+      floatingActionButton: currentUser != null && currentUser.uid == f.uploadedBy
+          ? FloatingActionButton(
+              backgroundColor: Colors.red.shade600,
+              child: const Icon(Icons.delete, color: Colors.white),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text("Delete File?"),
+                    content: const Text(
+                      "Are you sure you want to delete this tutorial?",
+                    ),
+                    actions: [
+                      TextButton(
+                        child: const Text("Cancel"),
+                        onPressed: () => Navigator.pop(context, false),
+                      ),
+                      TextButton(
+                        child: const Text(
+                          "Delete",
+                          style: TextStyle(color: Colors.red),
+                        ),
+                        onPressed: () => Navigator.pop(context, true),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await _deleteFile();
+                }
+              },
+            )
+          : null,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -378,7 +476,10 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
             const SizedBox(height: 20),
             Text(
               f.fileName,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 6),
 
@@ -450,24 +551,49 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
               ),
 
             // PPT
-            if (t == 'ppt' || t == 'pptx')
-              ElevatedButton.icon(
-                style: _btn(c),
-                icon: const Icon(Icons.slideshow, color: Colors.white),
-                label: Text(
-                  isDownloaded ? "Open Offline PPT" : "View Online",
-                  style: const TextStyle(color: Colors.white),
-                ),
-                onPressed: isDownloaded
-                    ? () => OpenFilex.open(_pathForViewer)
-                    : () async {
-                        if (!await _hasInternet()) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("No internet")),
-                          );
-                        }
+           if (t == 'ppt' || t == 'pptx')
+            Column(
+              children: [
+                // View Online Button (only if internet is available)
+                FutureBuilder<bool>(
+                  future: _hasInternet(),
+                  builder: (context, snapshot) {
+                    final hasInternet = snapshot.data ?? false;
+                    if (!hasInternet) return const SizedBox.shrink();
+
+                    return ElevatedButton.icon(
+                      style: _btn(c),
+                      icon: const Icon(Icons.slideshow, color: Colors.white),
+                      label: const Text("View Online",
+                          style: TextStyle(color: Colors.white)),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ViewOnlinePage(fileUrl: widget.file.fileUrl),
+                          ),
+                        );
                       },
-              ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 8),
+
+                // Open Offline PPT (only if already downloaded)
+                if (isDownloaded)
+                  ElevatedButton.icon(
+                    style: _btn(c),
+                    icon: const Icon(Icons.offline_pin, color: Colors.white),
+                    label: const Text(
+                      "Open Offline PPT",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    onPressed: () => OpenFilex.open(_pathForViewer),
+                  ),
+              ],
+            ),
 
             const SizedBox(height: 12),
 

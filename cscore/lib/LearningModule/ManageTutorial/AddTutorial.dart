@@ -266,7 +266,7 @@ class _AddTutorialPageState extends State<AddTutorialPage> {
         context,
       ).showSnackBar(const SnackBar(content: Text("Upload successful!")));
 
-      Navigator.pop(context);
+      Navigator.pop(context, true);
     } catch (e) {
       ScaffoldMessenger.of(
         context,

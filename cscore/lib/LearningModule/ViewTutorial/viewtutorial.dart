@@ -6,12 +6,30 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:pdfx/pdfx.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'tutorialmodel.dart';
 import 'tutorialfileviewer.dart';
+import '../ManageTutorial/AddTutorial.dart';
 
-class ViewTutorialPage extends StatelessWidget {
+class ViewTutorialPage extends StatefulWidget {
   const ViewTutorialPage({super.key});
+
+  @override
+  State<ViewTutorialPage> createState() => _ViewTutorialPageState();
+}
+
+class _ViewTutorialPageState extends State<ViewTutorialPage> {
+  Future<String?> _getUserRole() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    return doc.data()?['role']?.toString().toLowerCase();
+  }
 
   String _formatTimeAgo(Timestamp? ts) {
     if (ts == null) return "Unknown";
@@ -34,43 +52,44 @@ class ViewTutorialPage extends StatelessWidget {
         .collection('tutorial')
         .snapshots()
         .asyncMap((snapshot) async {
-          final List<Tutorial> tutorials = [];
+      final List<Tutorial> tutorials = [];
 
-          for (final doc in snapshot.docs) {
-            final subtopic = (doc.data()['subtopic'] ?? '').toString();
-            final filesSnap = await doc.reference.collection('files').get();
+      for (final doc in snapshot.docs) {
+        final subtopic = (doc.data()['subtopic'] ?? '').toString();
+        final filesSnap = await doc.reference.collection('files').get();
 
-            final files = filesSnap.docs.map((fileDoc) {
-              final data = fileDoc.data();
-              final rawType = (data['fileType'] ?? '').toString();
-              final fileType = rawType == 'mp4'
-                  ? 'video'
-                  : (rawType == 'pptx' || rawType == 'ppt')
+        final files = filesSnap.docs.map((fileDoc) {
+          final data = fileDoc.data();
+          final rawType = (data['fileType'] ?? '').toString();
+          final fileType = rawType == 'mp4'
+              ? 'video'
+              : (rawType == 'pptx' || rawType == 'ppt')
                   ? 'ppt'
                   : rawType;
 
-              return TutorialFile(
-                fileName: (data['fileName'] ?? '').toString(),
-                fileType: fileType,
-                fileUrl: (data['fileUrl'] ?? '').toString(),
-                teacherName: (data['teacherName'] ?? '').toString(),
-                uploadedBy: (data['uploadedBy'] ?? '').toString(),
-                description: (data['description'] ?? '').toString(),
-                thumbnailUrl: '',
-                modifiedDate: data['modifiedDate'],
-              );
-            }).toList();
+          return TutorialFile(
+            fileName: (data['fileName'] ?? '').toString(),
+            fileType: fileType,
+            fileUrl: (data['fileUrl'] ?? '').toString(),
+            teacherName: (data['teacherName'] ?? '').toString(),
+            uploadedBy: (data['uploadedBy'] ?? '').toString(),
+            description: (data['description'] ?? '').toString(),
+            storagePath: (data['storagePath'] ?? '').toString(),
+            thumbnailUrl: '',
+            modifiedDate: data['modifiedDate'],
+          );
+        }).toList();
 
-            files.sort((a, b) {
-              final at = a.modifiedDate?.toDate() ?? DateTime(2000);
-              final bt = b.modifiedDate?.toDate() ?? DateTime(2000);
-              return bt.compareTo(at);
-            });
-
-            tutorials.add(Tutorial(subtopic: subtopic, files: files));
-          }
-          return tutorials;
+        files.sort((a, b) {
+          final at = a.modifiedDate?.toDate() ?? DateTime(2000);
+          final bt = b.modifiedDate?.toDate() ?? DateTime(2000);
+          return bt.compareTo(at);
         });
+
+        tutorials.add(Tutorial(subtopic: subtopic, files: files));
+      }
+      return tutorials;
+    });
   }
 
   Color _accent(String type) {
@@ -204,19 +223,24 @@ class ViewTutorialPage extends StatelessWidget {
                         final ago = _formatTimeAgo(file.modifiedDate);
 
                         return GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => TutorialFileViewer(file: file),
-                            ),
-                          ),
+                          onTap: () async {
+                            final deleted = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TutorialFileViewer(file: file, subtopic: group.subtopic),
+                              ),
+                            );
+
+                            // 👇 If file was deleted, rebuild UI immediately
+                            if (deleted == true) {
+                              setState(() {});
+                            }
+                          },
                           child: Container(
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(16),
-                              color: accent.withOpacity(
-                                .25,
-                              ), // ✅ Card color by type
+                              color: accent.withOpacity(.25),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.08),
@@ -231,7 +255,8 @@ class ViewTutorialPage extends StatelessWidget {
                                 Stack(
                                   children: [
                                     ClipRRect(
-                                      borderRadius: const BorderRadius.vertical(
+                                      borderRadius:
+                                          const BorderRadius.vertical(
                                         top: Radius.circular(16),
                                       ),
                                       child: thumb != null
@@ -247,13 +272,10 @@ class ViewTutorialPage extends StatelessWidget {
                                               color: accent.withOpacity(.25),
                                               child: Icon(
                                                 file.fileType == 'video'
-                                                    ? Icons
-                                                          .play_circle_fill_rounded
+                                                    ? Icons.play_circle_fill_rounded
                                                     : file.fileType == 'pdf'
-                                                    ? Icons
-                                                          .picture_as_pdf_rounded
-                                                    : Icons
-                                                          .slideshow_rounded, // ✅ PowerPoint-style icon
+                                                        ? Icons.picture_as_pdf_rounded
+                                                        : Icons.slideshow_rounded,
                                                 color: accent,
                                                 size: 60,
                                               ),
@@ -270,9 +292,8 @@ class ViewTutorialPage extends StatelessWidget {
                                           ),
                                           decoration: BoxDecoration(
                                             color: Colors.red.shade600,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                           ),
                                           child: const Text(
                                             "NEW",
@@ -320,6 +341,34 @@ class ViewTutorialPage extends StatelessWidget {
               );
             },
           );
+        },
+      ),
+      floatingActionButton: FutureBuilder<String?>(
+        future: _getUserRole(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox.shrink();
+          }
+
+          if (snapshot.data == "teacher") {
+            return FloatingActionButton(
+              onPressed: () async {
+                final added = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AddTutorialPage()),
+                );
+
+                if (added == true) {
+                  setState(() {}); // rebuilds instantly
+                }
+              },
+              backgroundColor: Colors.teal,
+              elevation: 6,
+              child: const Icon(Icons.add, size: 28, color: Colors.white),
+            );
+          } else {
+            return const SizedBox.shrink();
+          }
         },
       ),
     );

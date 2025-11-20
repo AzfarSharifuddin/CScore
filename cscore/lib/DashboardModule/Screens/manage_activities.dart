@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cscore/QuizModule/Management/manage_quiz.dart';
-import 'package:cscore/LearningModule/ManageTutorial/AddTutorial.dart';
+import 'package:cscore/LearningModule/ViewTutorial/viewtutorial.dart';
 
 class ManageActivitiesPage extends StatelessWidget {
   const ManageActivitiesPage({super.key});
@@ -115,7 +115,7 @@ class ManageActivitiesPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AddTutorialPage()),
+                  MaterialPageRoute(builder: (_) => const ViewTutorialPage()),
                 );
               },
               child: Container(
