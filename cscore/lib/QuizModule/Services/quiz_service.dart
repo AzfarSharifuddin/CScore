@@ -28,8 +28,10 @@ class QuizService {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return null;
 
-      String randomImage = availableImages[Random().nextInt(availableImages.length)];
+      String randomImage =
+          availableImages[Random().nextInt(availableImages.length)];
 
+      // 🔹 Save Quiz in "quiz" collection
       final ref = await _db.collection('quiz').add({
         'title': title,
         'description': description,
@@ -45,6 +47,18 @@ class QuizService {
         'maxAttempts': maxAttempts,
       });
 
+      // 🆕 ALSO create activity for dashboard
+      await _db.collection('activities').add({
+        'title': title,
+        'description': description,
+        'deadline': Timestamp.fromDate(deadline),
+        'createdAt': Timestamp.now(),
+        'type': 'Quiz',
+        'createdBy': user.uid,
+        'quizId': ref.id, // 🔗 Linked Quiz ID
+        'isActive': true,
+      });
+
       return ref.id;
     } catch (e) {
       print("❌ createQuizMetadata error: $e");
@@ -53,7 +67,8 @@ class QuizService {
   }
 
   /// Add/replace entire questions array
-  Future<bool> addQuestionsToQuiz(String quizId, List<QuestionModel> questions) async {
+  Future<bool> addQuestionsToQuiz(
+      String quizId, List<QuestionModel> questions) async {
     try {
       await _db.collection('quiz').doc(quizId).update({
         'questions': questions.map((q) => q.toMap()).toList(),
@@ -81,7 +96,8 @@ class QuizService {
         .collection('quiz')
         .where('createdBy', isEqualTo: user.uid)
         .snapshots()
-        .map((snap) => snap.docs.map((d) => QuizModel.fromDocument(d)).toList());
+        .map((snap) =>
+            snap.docs.map((d) => QuizModel.fromDocument(d)).toList());
   }
 
   /// Fetch single quiz by id
@@ -119,12 +135,14 @@ class QuizService {
   }
 
   /// Mark specific question as evaluated by AI (subjective)
-  Future<void> markQuestionEvaluated(String quizId, int questionIndex, bool isCorrect) async {
+  Future<void> markQuestionEvaluated(
+      String quizId, int questionIndex, bool isCorrect) async {
     try {
       final doc = await _db.collection('quiz').doc(quizId).get();
       if (!doc.exists) return;
       final data = doc.data()!;
-      final questions = List<Map<String, dynamic>>.from(data['questions'] ?? []);
+      final questions =
+          List<Map<String, dynamic>>.from(data['questions'] ?? []);
       if (questionIndex < 0 || questionIndex >= questions.length) return;
       questions[questionIndex]['aiEvaluated'] = isCorrect;
       await _db.collection('quiz').doc(quizId).update({'questions': questions});

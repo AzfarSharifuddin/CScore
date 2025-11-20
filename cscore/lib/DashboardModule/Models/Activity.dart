@@ -1,29 +1,35 @@
+// lib/DashboardModule/Models/Activity.dart
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Activity {
+  final String id;
   final String title;
-  final String date;
   final String notes;
+  final DateTime date;
+  final String type;
+  final String quizId;
 
   Activity({
+    required this.id,
     required this.title,
-    required this.date,
     required this.notes,
+    required this.date,
+    required this.type,
+    required this.quizId,
   });
 
-  // Convert object to Firestore map
-  Map<String, dynamic> toMap() {
-    return {
-      'title': title,
-      'date': date,
-      'notes': notes,
-    };
-  }
+  // Convert Firestore document to Activity object
+  factory Activity.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
 
-  // Create object from Firestore map
-  factory Activity.fromMap(Map<String, dynamic> map) {
     return Activity(
-      title: map['title'] ?? '',
-      date: map['date'] ?? '',
-      notes: map['notes'] ?? '',
+      id: doc.id,
+      title: data['title'] ?? '',
+      notes: data['description'] ?? '',
+      date: (data['deadline'] as Timestamp).toDate(),
+      type: data['type'] ?? 'Quiz',
+      quizId: data['quizId'] ?? '',
     );
   }
 }
