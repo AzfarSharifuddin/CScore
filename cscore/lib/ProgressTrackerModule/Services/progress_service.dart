@@ -25,15 +25,25 @@ class ProgressService {
         .update(record.toMap());
   }
 
-  /// Delete manual progress
-  Future<void> deleteProgress(String userId, String recordId) async {
+  Future<void> deleteProgress(String userId, ProgressRecord record) async {
+  if (record.type == 'quiz') {
+    // Delete from quizProgress
+    await _db
+        .collection('progress')
+        .doc(userId)
+        .collection('quizProgress')
+        .doc(record.id)
+        .delete();
+  } else {
+    // Delete from manual 'records'
     await _db
         .collection('progress')
         .doc(userId)
         .collection('records')
-        .doc(recordId)
+        .doc(record.id)
         .delete();
   }
+}
 
   /// STREAM — Manual progress
   Stream<List<ProgressRecord>> getManualProgress(String userId) {

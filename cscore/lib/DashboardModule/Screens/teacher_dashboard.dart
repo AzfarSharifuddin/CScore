@@ -160,7 +160,7 @@ class TeacherDashboard extends StatelessWidget {
             // MANAGE ACTIVITIES LIST
             // -------------------------------------------------------------
             const Text(
-              'Manage Activities',
+              'New Activities',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
