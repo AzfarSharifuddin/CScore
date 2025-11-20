@@ -35,7 +35,6 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
 
     final doc = await _firestore.collection('users').doc(uid).get();
 
-    // Load all qualifications
     qualifications = await _getAllQualifications();
 
     if (!mounted) return;
@@ -46,7 +45,7 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
   }
 
   // ------------------------------
-  // FETCH ALL QUALIFICATIONS
+  // FETCH QUALIFICATIONS
   // ------------------------------
   Future<List<Qualification>> _getAllQualifications() async {
     final uid = _auth.currentUser?.uid;
@@ -65,7 +64,7 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
   }
 
   // ------------------------------
-  // OPEN EDIT PAGE
+  // EDIT PROFILE
   // ------------------------------
   Future<void> _openEdit({bool openPassword = false}) async {
     await Navigator.push(
@@ -78,7 +77,7 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
   }
 
   // ------------------------------
-  // OPEN QUALIFICATION MANAGER
+  // MANAGE QUALIFICATIONS
   // ------------------------------
   void _openQualificationManager() {
     Navigator.push(
@@ -121,7 +120,9 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
                         radius: 55,
                         backgroundColor: Colors.blueGrey.shade400,
                         child: Text(
-                          (userData!['name'] ?? 'T')[0].toString().toUpperCase(),
+                          (userData!['name'] ?? 'T')[0]
+                              .toString()
+                              .toUpperCase(),
                           style: const TextStyle(fontSize: 45, color: Colors.white),
                         ),
                       ),
@@ -130,7 +131,8 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
                       // NAME
                       Text(
                         userData!['name'] ?? 'No name',
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 6),
 
@@ -150,7 +152,7 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
                       const SizedBox(height: 20),
 
                       // ------------------------------
-                      // INFORMATION BOX
+                      // INFO BOX (BIG BOX)
                       // ------------------------------
                       Container(
                         padding: const EdgeInsets.all(18),
@@ -160,59 +162,45 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
                           border: Border.all(color: Colors.black12),
                         ),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // EMAIL
-                            Row(
-                              children: [
-                                const Icon(Icons.email_rounded, color: Colors.black87),
-                                const SizedBox(width: 12),
-                                const Text('Email', style: TextStyle(fontWeight: FontWeight.w600)),
-                                const Spacer(),
-                                Text(userData!['email'] ?? ''),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-
-                            // STATUS
-                            Row(
-                              children: [
-                                const Icon(Icons.verified_user, color: Colors.black87),
-                                const SizedBox(width: 12),
-                                const Text('Status', style: TextStyle(fontWeight: FontWeight.w600)),
-                                const Spacer(),
-                                Text(userData!['status'] ?? 'Active'),
-                              ],
-                            ),
+                            infoRow(Icons.email_rounded, "Email",
+                                userData!['email'] ?? ''),
+                            const SizedBox(height: 12),
+                            infoRow(Icons.verified, "Status",
+                                userData!['status'] ?? 'Active'),
                           ],
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 25),
 
                       // ------------------------------
-                      // ALL QUALIFICATIONS (OPTION B STYLE)
+                      // QUALIFICATIONS (BIG BOXES)
                       // ------------------------------
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           "Qualifications",
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
 
                       qualifications.isEmpty
-                          ? const Text("No qualifications added yet",
-                              style: TextStyle(fontSize: 14, color: Colors.black54))
+                          ? const Text(
+                              "No qualifications added yet",
+                              style: TextStyle(color: Colors.black54),
+                            )
                           : Column(
                               children: qualifications.map((q) {
                                 return Container(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  padding: const EdgeInsets.all(14),
+                                  margin: const EdgeInsets.only(bottom: 14),
+                                  padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius: BorderRadius.circular(14),
+                                    borderRadius: BorderRadius.circular(16),
                                     border: Border.all(color: Colors.black12),
                                   ),
                                   child: Column(
@@ -221,17 +209,13 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
                                       Text(
                                         "Institute: ${q.institution}",
                                         style: const TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.black87),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600),
                                       ),
                                       const SizedBox(height: 6),
                                       Text(
                                         "Qualification: ${q.qualification}",
-                                        style: const TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.black87,
-                                            height: 1.3),
+                                        style: const TextStyle(fontSize: 14),
                                       ),
                                     ],
                                   ),
@@ -239,35 +223,35 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
                               }).toList(),
                             ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 25),
 
                       // ------------------------------
                       // BUTTONS
                       // ------------------------------
                       buildProfileButton(
-                        icon: Icons.settings_rounded,
-                        text: 'Edit Profile',
+                        icon: Icons.settings,
+                        text: "Edit Profile",
                         onPressed: () => _openEdit(openPassword: false),
                       ),
                       const SizedBox(height: 12),
 
                       buildProfileButton(
-                        icon: Icons.lock_outline_rounded,
-                        text: 'Change Password',
+                        icon: Icons.lock_outline,
+                        text: "Change Password",
                         onPressed: () => _openEdit(openPassword: true),
                       ),
                       const SizedBox(height: 12),
 
                       buildProfileButton(
                         icon: Icons.library_books,
-                        text: 'Manage Qualifications',
+                        text: "Manage Qualifications",
                         onPressed: _openQualificationManager,
                       ),
                       const SizedBox(height: 12),
 
                       buildProfileButton(
                         icon: Icons.logout_rounded,
-                        text: 'Logout',
+                        text: "Logout",
                         iconColor: Colors.red,
                         textColor: Colors.red,
                         onPressed: _logout,
@@ -279,7 +263,22 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
   }
 
   // ------------------------------
-  // REUSABLE PROFILE BUTTON
+  // INFO ROW COMPONENT
+  // ------------------------------
+  Widget infoRow(IconData icon, String title, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.black87),
+        const SizedBox(width: 12),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        const Spacer(),
+        Text(value),
+      ],
+    );
+  }
+
+  // ------------------------------
+  // REUSABLE BIG BUTTON
   // ------------------------------
   Widget buildProfileButton({
     required IconData icon,
@@ -306,7 +305,11 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
               const SizedBox(width: 12),
               Text(
                 text,
-                style: TextStyle(fontSize: 16, color: textColor, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: textColor,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),

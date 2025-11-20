@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 class ManageQualificationPage extends StatefulWidget {
   const ManageQualificationPage({super.key});
 
@@ -59,8 +58,7 @@ class _ManageQualificationPageState extends State<ManageQualificationPage> {
             ),
             TextField(
               controller: _qualificationController,
-              decoration:
-                  const InputDecoration(labelText: "Name of Qualification"),
+              decoration: const InputDecoration(labelText: "Name of Qualification"),
             ),
           ],
         ),
@@ -94,8 +92,10 @@ class _ManageQualificationPageState extends State<ManageQualificationPage> {
     final uid = _auth.currentUser!.uid;
 
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text("Manage Qualifications"),
+        elevation: 0,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddDialog,
@@ -116,24 +116,59 @@ class _ManageQualificationPageState extends State<ManageQualificationPage> {
           final docs = snapshot.data!.docs;
 
           if (docs.isEmpty) {
-            return const Center(child: Text("No qualifications added yet"));
+            return const Center(
+              child: Text(
+                "No qualifications added yet",
+                style: TextStyle(color: Colors.black54),
+              ),
+            );
           }
 
           return ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
             itemCount: docs.length,
             itemBuilder: (_, i) {
               final data = docs[i].data() as Map<String, dynamic>;
               final id = docs[i].id;
 
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: ListTile(
-                  title: Text(data['qualification'] ?? ''),
-                  subtitle: Text(data['institution'] ?? ''),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _deleteQualification(id),
-                  ),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.black12),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Text section
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Institute: ${data['institution']}",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            "Qualification: ${data['qualification']}",
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Delete button
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _deleteQualification(id),
+                    ),
+                  ],
                 ),
               );
             },

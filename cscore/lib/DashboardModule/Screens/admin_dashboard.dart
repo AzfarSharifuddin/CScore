@@ -1,9 +1,8 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cscore/AccountModule/model/admin_edit_user_profile.dart'; // ← Import edit screen
 import 'package:cscore/ForumModule/forum.dart';
-
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -16,19 +15,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
   String selectedTab = "users";
   String selectedFilter = "All";
   String searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final TextEditingController _searchController = TextEditingController();
+
+  // 🔐 LOGOUT
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+  }
 
   void _approveAllPending() async {
     final batch = _firestore.batch();
 
-    final pendingUsers = await _firestore
+    final pending = await _firestore
         .collection('users')
         .where('status', isEqualTo: 'Pending')
         .get();
 
-    for (var doc in pendingUsers.docs) {
+    for (var doc in pending.docs) {
       batch.update(doc.reference, {
         'status': 'Active',
         'updatedAt': Timestamp.now(),
@@ -36,7 +42,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
 
     await batch.commit();
-
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('All pending users approved!')),
     );
@@ -48,15 +53,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
       'updatedAt': Timestamp.now(),
     });
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('User status updated to $status')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('User status updated to $status')),
+    );
   }
 
   void _deleteUser(String docId) async {
     try {
       await _firestore.collection('users').doc(docId).delete();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User deleted from Firestore.')),
+        const SnackBar(content: Text('User deleted.')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -65,15 +71,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  void _showEditUserSheet(Map<String, dynamic> user, String docId) {
-    final TextEditingController nameController =
-        TextEditingController(text: user['name'] ?? '');
-    String role = user['role'] ?? 'Student';
-
+  // 👤 SHOW USER DETAILS WITH EDIT BUTTON
+  void _showUserProfile(Map<String, dynamic> user, String docId) {
     showModalBottomSheet(
-      isScrollControlled: true,
       context: context,
-      builder: (context) => Padding(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (_) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
           left: 20,
@@ -83,55 +89,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Edit User',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: role,
-              items: const [
-                DropdownMenuItem(value: 'Student', child: Text('Student')),
-                DropdownMenuItem(value: 'Teacher', child: Text('Teacher')),
-                DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-              ],
-              onChanged: (value) => role = value ?? role,
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () async {
-                await _firestore.collection('users').doc(docId).update({
-                  'name': nameController.text,
-                  'role': role,
-                });
-                Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showUserProfile(Map<String, dynamic> user, String docId) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
             const Text("User Profile",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+
             const SizedBox(height: 20),
             ListTile(
               leading: CircleAvatar(
@@ -139,7 +99,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 backgroundColor: Colors.blueGrey.withOpacity(0.2),
                 child: const Icon(Icons.person, size: 40),
               ),
-              title: Text(user["name"] ?? user['email'] ?? 'No name'),
+              title: Text(user["name"] ?? user["email"]),
               subtitle: Text("${user["role"]}\n${user["email"]}"),
               trailing: Text(
                 "[${user["status"]}]",
@@ -153,50 +113,59 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ),
             ),
+
             const SizedBox(height: 20),
 
-            if (user["status"] == "Pending") ...[
+            // 📝 EDIT PROFILE BUTTON (NEW)
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AdminEditUserProfile(userId: docId),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.edit),
+              label: const Text("Edit User Name"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueGrey,
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            if (user["status"] == "Pending")
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
                   _updateUserStatus(docId, "Active");
                 },
-                icon: const Icon(Icons.check_circle_outline),
+                icon: const Icon(Icons.check),
                 label: const Text("Approve Registration"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   minimumSize: const Size(double.infinity, 50),
                 ),
               ),
-              const SizedBox(height: 10),
-            ],
+
+            const SizedBox(height: 10),
 
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.pop(context);
-                _updateUserStatus(docId, 'Suspended');
+                _updateUserStatus(docId, "Suspended");
               },
-              icon: const Icon(Icons.pause_circle_outline),
+              icon: const Icon(Icons.pause),
               label: const Text("Suspend Account"),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.grey,
                 minimumSize: const Size(double.infinity, 50),
               ),
             ),
-            const SizedBox(height: 10),
 
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                _showEditUserSheet(user, docId);
-              },
-              icon: const Icon(Icons.edit),
-              label: const Text("Edit Profile"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueGrey,
-                minimumSize: const Size(double.infinity, 50),
-              ),
-            ),
             const SizedBox(height: 10),
 
             ElevatedButton.icon(
@@ -218,130 +187,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildUserList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestore.collection('users').snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Center(child: Text('Error loading users'));
-        }
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        List docs = snapshot.data!.docs;
-
-        docs = docs.where((doc) {
-          final user = doc.data() as Map<String, dynamic>;
-          final matchesSearch = user['name']
-                  ?.toLowerCase()
-                  .contains(searchQuery.toLowerCase()) ??
-              user['email']
-                  ?.toLowerCase()
-                  .contains(searchQuery.toLowerCase()) ??
-              false;
-
-          final matchesFilter = selectedFilter == "All" ||
-              user['status'] == selectedFilter;
-
-          return matchesSearch && matchesFilter;
-        }).toList();
-
-        if (docs.isEmpty) {
-          return const Center(child: Text('No users found'));
-        }
-
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search by name or email...',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                onChanged: (value) {
-                  setState(() => searchQuery = value);
-                },
-              ),
-            ),
-
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildFilterChip("All"),
-                  _buildFilterChip("Pending"),
-                  _buildFilterChip("Active"),
-                  _buildFilterChip("Suspended"),
-                ],
-              ),
-            ),
-
-            if (selectedFilter == "Pending")
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: ElevatedButton.icon(
-                  onPressed: _approveAllPending,
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text("Approve All Pending Users"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    minimumSize: const Size(double.infinity, 50),
-                  ),
-                ),
-              ),
-
-            Expanded(
-              child: ListView.builder(
-                itemCount: docs.length,
-                padding: const EdgeInsets.all(12),
-                itemBuilder: (context, index) {
-                  final doc = docs[index];
-                  final user = doc.data() as Map<String, dynamic>;
-                  final status = user['status'] ?? 'Pending';
-
-                  Color statusColor = Colors.orange;
-                  if (status == 'Active') statusColor = Colors.green;
-                  if (status == 'Suspended' || status == 'Deleted')
-                    statusColor = Colors.red;
-
-                  return Card(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: statusColor.withOpacity(0.2),
-                        child: Icon(Icons.person, color: statusColor),
-                      ),
-                      title: Text(user['name'] ?? user['email'] ?? 'No name'),
-                      subtitle: Text(
-                          "${user['role'] ?? 'Student'}\n${user['email'] ?? ''}"),
-                      trailing: Text(
-                        "[$status]",
-                        style: TextStyle(
-                            color: statusColor, fontWeight: FontWeight.w600),
-                      ),
-                      onTap: () => _showUserProfile(user, doc.id),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildFilterChip(String label) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -353,17 +198,130 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildSystemLogs() {
-    return const Center(
-      child: Text(
-        "System Logs Coming Soon...",
-        style: TextStyle(fontSize: 18, color: Colors.grey),
-      ),
-    );
-  }
+  Widget _buildUserList() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: "Search by name or email...",
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onChanged: (val) => setState(() => searchQuery = val),
+          ),
+        ),
 
-  Widget _buildForumManager() {
-    return const Forum();
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildFilterChip("All"),
+              _buildFilterChip("Pending"),
+              _buildFilterChip("Active"),
+              _buildFilterChip("Suspended"),
+            ],
+          ),
+        ),
+
+        if (selectedFilter == "Pending")
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: ElevatedButton.icon(
+              onPressed: _approveAllPending,
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text("Approve All Pending Users"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+          ),
+
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _firestore.collection('users').snapshots(),
+            builder: (_, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              List docs = snapshot.data!.docs;
+
+              docs = docs.where((d) {
+                final user = d.data() as Map<String, dynamic>;
+
+                final name = (user["name"] ?? "").toLowerCase();
+                final email = (user["email"] ?? "").toLowerCase();
+                final status = (user["status"] ?? "").toLowerCase();
+
+                final matchesSearch = name.contains(searchQuery.toLowerCase()) ||
+                    email.contains(searchQuery.toLowerCase());
+
+                final matchesFilter = selectedFilter == "All" ||
+                    status == selectedFilter.toLowerCase();
+
+                return matchesSearch && matchesFilter;
+              }).toList();
+
+              if (docs.isEmpty) {
+                return const Center(
+                  child: Text(
+                    "No users found for this filter.\nTry another filter or search.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16),
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: docs.length,
+                itemBuilder: (_, i) {
+                  final doc = docs[i];
+                  final user = doc.data() as Map<String, dynamic>;
+
+                  final status = user["status"] ?? "Pending";
+                  Color statusColor = Colors.orange;
+                  if (status == "Active") statusColor = Colors.green;
+                  if (status == "Suspended") statusColor = Colors.red;
+
+                  return Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: statusColor.withOpacity(0.2),
+                        child: Icon(Icons.person, color: statusColor),
+                      ),
+                      title: Text(user["name"] ?? user["email"]),
+                      subtitle: Text("${user["role"]}\n${user["email"] ?? ""}"),
+                      trailing: Text(
+                        "[$status]",
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onTap: () => _showUserProfile(user, doc.id),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -373,9 +331,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,
-        title:
-            const Text("Welcome, Admin!", style: TextStyle(color: Colors.black87)),
+        title: const Text(
+          "Welcome, Admin!",
+          style: TextStyle(color: Colors.black87),
+        ),
         iconTheme: const IconThemeData(color: Colors.black),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.red),
+            onPressed: _logout,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -390,12 +356,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
                 const SizedBox(width: 10),
                 ChoiceChip(
-                  label: const Text("System Logs"),
-                  selected: selectedTab == "logs",
-                  onSelected: (_) => setState(() => selectedTab = "logs"),
-                ),
-                const SizedBox(width: 10),
-                ChoiceChip(
                   label: const Text("Forums"),
                   selected: selectedTab == "forums",
                   onSelected: (_) => setState(() => selectedTab = "forums"),
@@ -407,9 +367,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Expanded(
             child: selectedTab == "users"
                 ? _buildUserList()
-                : selectedTab == "forums"
-                    ? _buildForumManager()
-                    : _buildSystemLogs(),
+                : const Forum(),
           ),
         ],
       ),

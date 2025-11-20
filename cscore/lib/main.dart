@@ -19,7 +19,7 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Optional: allows students to view materials without logging in (keep as you had it)
-  await FirebaseAuth.instance.signInAnonymously();
+  //await FirebaseAuth.instance.signInAnonymously();
 
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
