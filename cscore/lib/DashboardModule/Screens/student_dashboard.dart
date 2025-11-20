@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 import 'package:cscore/DashboardModule/Screens/student_profile.dart';
-import '../Models/Activity.dart';   // 🔹 Make sure this model exists
 
 class StudentDashboard extends StatelessWidget {
   const StudentDashboard({super.key});
@@ -24,7 +23,7 @@ class StudentDashboard extends StatelessWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
-            // 🔹 Top Buttons
+            // 🔹 Top Buttons (Fixed Text Wrapping)
             Row(
               children: [
                 Expanded(
@@ -33,7 +32,13 @@ class StudentDashboard extends StatelessWidget {
                       Navigator.pushNamed(context, '/learning');
                     },
                     icon: const Icon(Icons.school_rounded),
-                    label: const Text('Modules'),
+                    label: const FittedBox(child: Text('Modules')),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -43,7 +48,13 @@ class StudentDashboard extends StatelessWidget {
                       Navigator.pushNamed(context, '/quiz');
                     },
                     icon: const Icon(Icons.quiz_rounded),
-                    label: const Text('Quizzes'),
+                    label: const FittedBox(child: Text('Quizzes')),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -53,18 +64,25 @@ class StudentDashboard extends StatelessWidget {
                       Navigator.pushNamed(context, '/forum');
                     },
                     icon: const Icon(Icons.forum_rounded),
-                    label: const Text('Forum'),
+                    label: const FittedBox(child: Text('Forum')),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
 
             const SizedBox(height: 24),
+
             const Text('Upcoming Activities',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
 
-            // 🔹 Real Firestore Activities
+            // 🔹 Firestore Activities
             StreamBuilder(
               stream: FirebaseFirestore.instance
                   .collection('activities')
@@ -106,14 +124,13 @@ class StudentDashboard extends StatelessWidget {
               },
             ),
 
-            // 🔹 Removed Class Materials completely
-
             const SizedBox(height: 16),
+
             const Text('Announcements',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
 
-            // 🔹 Real-time Announcements
+            // 🔹 Firestore Announcements
             StreamBuilder(
               stream: FirebaseFirestore.instance
                   .collection('announcement')
@@ -131,6 +148,7 @@ class StudentDashboard extends StatelessWidget {
                 return Column(
                   children: snapshot.data!.docs.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 8),
                       shape: RoundedRectangleBorder(
@@ -144,7 +162,8 @@ class StudentDashboard extends StatelessWidget {
                         subtitle: Text(data['Description'] ?? ''),
                         trailing: Text(
                           data['Date'] ?? '',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style:
+                              const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ),
                     );
