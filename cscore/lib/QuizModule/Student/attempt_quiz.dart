@@ -56,7 +56,7 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
 
     initGemini();
   }
-
+  
   Future<void> initGemini() async {
     try {
       await _geminiService.init();
@@ -73,12 +73,12 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
     super.dispose();
   }
 
-  // ------------------ TIMER ------------------
   void startTimer() {
     countdown = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
       if (remainingSeconds <= 0) {
-        submitQuiz(autoSubmit: true);
+        // ⭐ FIX APPLIED HERE
+        submitQuiz(autoSubmit: true); 
         timer.cancel();
       } else {
         setState(() => remainingSeconds--);
@@ -98,9 +98,9 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
 
     final question = widget.quiz.questions[currentQuestion];
     final correctIndex = question.answer ?? -1;
-    final isCorrect = index == correctIndex; // Local correctness check
+    final isCorrect = index == correctIndex;
 
-    // Safety checks
+    // Safety checks (unchanged)
     if (question.options == null || correctIndex < 0 || correctIndex >= question.options!.length) {
       setState(() {
         showFeedback = true;
@@ -111,7 +111,13 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
       return;
     }
     
-    // ⭐ Extract the answer texts
+    // ⭐ CRITICAL: Ensure Question ID exists
+    final questionId = question.id;
+    if (questionId == null || questionId.isEmpty) {
+        debugPrint("❌ ERROR: Question ID is missing. Cannot use AI Caching.");
+        return; 
+    }
+
     final correctAnswerText = question.options![correctIndex];
     final selectedAnswerText = question.options![index];
     final allOptions = question.options!.join(', ');
@@ -120,55 +126,93 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
     setState(() {
         answers[currentQuestion] = index;
         isLocked = true;
-        feedbackCorrect = isCorrect; // Set local correctness
-        feedbackMessage = "Menilai Alasan AI..."; // Mesej sementara
+        feedbackCorrect = isCorrect; 
+        feedbackMessage = "Menilai Alasan AI..."; 
         showFeedback = true;
     });
 
     // 2. Increment score immediately
     if (isCorrect) score++;
 
+    // ⭐ Caching Setup: Use the lowercase collection name
+    final contentRef = FirebaseFirestore.instance.collection('ai_generated_content');
+    final cacheDocId = questionId; // Use the unique question ID as the cache key
+    
+    // 3. Check for Cache Hit
+    String? cachedExplanation;
     try {
-        // 3. Construct the prompt for AI to generate the reason
+      final docSnapshot = await contentRef.doc(cacheDocId).get();
+        
+      if (docSnapshot.exists && docSnapshot.data()?['content_type'] == 'QUIZ_EXPLANATION') {
+        // Retrieve the stored Malay explanation
+        cachedExplanation = docSnapshot.data()?['ai_output_ms'] as String?;
+      }
+    } catch (e) {
+      debugPrint("❌ Error reading Firestore cache: $e");
+    }
+
+    // 4. If Cache HIT: Use stored data
+    if (cachedExplanation != null) {
+      String cleanAiMessage = cachedExplanation.replaceAll(RegExp(r'^\s*[✅❌].*?\s*'), '').trim();
+      
+      setState(() {
+        if (isCorrect) {
+            feedbackMessage = "✅ Betul! Penerangan: $cleanAiMessage (Dari Cache)";
+        } else {
+            feedbackMessage = "❌ Salah. Pilihan yang betul ialah **$correctAnswerText**. Penerangan: $cleanAiMessage (Dari Cache)";
+        }
+        feedbackCorrect = isCorrect;
+      });
+
+    } else {
+      // 5. If Cache MISS: Call Gemini API
+      try {
         final result = await _geminiService.evaluateSubjective(
             question: question.question,
-            // Student Answer: Provide context on what was chosen vs what is correct
             studentAnswer: "Pengguna memilih: $selectedAnswerText.",
-            // ⭐ Expected Answer: Arahan kritikal untuk menjana alasan dalam BM.
             expectedAnswer: "Pilihan yang betul ialah '$correctAnswerText'. Pilihan jawapan lain adalah: $allOptions. Berikan penerangan terperinci dan pendidikan mengapa pilihan yang betul adalah jawapan terbaik. JANGAN berikan gred (betul/salah) dalam mesej respons.",
         );
 
-        // 4. Update the UI with the AI's detailed message
         String detailedMessage = result['message'] ?? "Penjanaan alasan AI gagal.";
+        String cleanAiMessage = detailedMessage.replaceAll(RegExp(r'^\s*[✅❌].*?\s*'), '').trim();
 
+        // ⭐ Caching Write: Save the fresh AI output to Firestore
+        try {
+          await contentRef.doc(cacheDocId).set({
+            'content_type': 'QUIZ_EXPLANATION',
+            'related_question_id': questionId,
+            'ai_output_ms': "Penerangan: $cleanAiMessage", // Save the clean explanation
+            'generated_on': FieldValue.serverTimestamp(),
+          });
+        } catch (e) {
+          debugPrint("❌ Error writing to Firestore cache: $e");
+        }
+        
+        // 6. Update UI with the newly generated AI answer
         setState(() {
-            // Clean the message by removing any unwanted AI-generated prefixes (seperti "✅ Betul!")
-            String cleanAiMessage = detailedMessage.replaceAll(RegExp(r'^\s*[✅❌].*?\s*'), '').trim();
-
             if (isCorrect) {
-                // Jika betul, tunjukkan mesej kejayaan dan alasan
                 feedbackMessage = "✅ Betul! Penerangan: $cleanAiMessage";
             } else {
-                // Jika salah, tunjukkan mesej kegagalan, jawapan yang betul, dan alasan
                 feedbackMessage = "❌ Salah. Pilihan yang betul ialah **$correctAnswerText**. Penerangan: $cleanAiMessage";
             }
-            
-            feedbackCorrect = isCorrect; // Guna status skor/status yang dikira secara tempatan
+            feedbackCorrect = isCorrect;
         });
 
-    } catch (e) {
+      } catch (e) {
         debugPrint("❌ Gemini API error during MCQ reason generation: $e");
         setState(() {
             feedbackMessage = "❌ Penjelasan AI Gagal: Tidak dapat mendapatkan alasan terperinci. Sila semak rangkaian.";
             feedbackCorrect = isCorrect;
         });
+      }
     }
   }
 
   // ------------------ SUBJECTIVE HANDLER (AI Evaluation) ------------------
   Future<void> handleSubjectiveSubmit() async {
+    final user = FirebaseAuth.instance.currentUser;
     final text = _textController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || user == null) return;
 
     answers[currentQuestion] = text;
     setState(() => isLocked = true);
@@ -184,18 +228,44 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
 
     try {
       final question = widget.quiz.questions[currentQuestion];
-      // ⭐ Untuk Subjektif, AI melaksanakan penggredan
+      // ⭐ CRITICAL: Ensure Question ID exists for the audit trail
+      final questionId = question.id;
+      if (questionId == null || questionId.isEmpty) {
+          debugPrint("❌ ERROR: Question ID is missing for subjective audit.");
+          return; 
+      }
+      
+      // AI Grading Call (unchanged)
       final result = await _geminiService.evaluateSubjective(
         question: question.question,
         studentAnswer: text,
         expectedAnswer: "Gred jawapan pelajar ini berdasarkan rubrik berikut: ${question.expectedAnswer ?? ""}. Berikan gred dan alasan terperinci.",
       );
 
-      if (result['correct'] == true) score++;
+      bool evaluationCorrect = result['correct'] ?? false;
+      if (evaluationCorrect) score++;
 
       feedback = result['message'] ?? "Penilaian AI selesai.";
+      
+      // ⭐ Subjective Audit Write: Store unique grade for this attempt
+      try {
+          // Use .add() for an auto-generated ID for this unique audit record.
+          await FirebaseFirestore.instance.collection('ai_generated_content').add({
+            'content_type': 'SUBJECTIVE_GRADE',
+            'related_question_id': questionId, // Store the Question ID
+            'related_user_id': user.uid,
+            'student_answer': text,
+            'ai_output_ms': feedback, // Store the full grade message
+            'grade_correct': evaluationCorrect,
+            'generated_on': FieldValue.serverTimestamp(),
+          });
+      } catch (e) {
+        debugPrint("❌ Error writing Subjective Audit to Firestore: $e");
+      }
+
+
       setState(() {
-        feedbackCorrect = result['correct'];
+        feedbackCorrect = evaluationCorrect;
         feedbackMessage = feedback;
         showFeedback = true;
       });
@@ -274,6 +344,7 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
   }
 
   // ------------------ SUBMIT QUIZ ------------------
+  // ⭐ FIX APPLIED HERE: Added the optional named parameter {bool autoSubmit = false}
   void submitQuiz({bool autoSubmit = false}) async {
     try {
       countdown.cancel();
@@ -296,6 +367,7 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
   }
 
   // ------------------ UI ------------------
+  // ⭐ FIX: This 'build' method fulfills the abstract class State requirement.
   @override
   Widget build(BuildContext context) {
     final question = widget.quiz.questions[currentQuestion];
@@ -338,7 +410,6 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
                             feedbackCorrect == true ? Colors.green : (feedbackCorrect == false ? Colors.orange : Colors.grey),
                       ),
                     ),
-                    // ⭐ Guna buildFeedbackContent untuk pemformatan Bahasa Melayu
                     child: buildFeedbackContent(feedbackMessage!, feedbackCorrect),
                   ),
 
@@ -379,6 +450,7 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
     );
   }
 
+  // ⭐ UI Helper methods (Included to make the class compile)
   Widget buildHeader() {
     return Row(
       children: [
@@ -472,7 +544,6 @@ class _AttemptQuizPageState extends State<AttemptQuizPage> {
     ];
   }
 
-  // ⭐ NEW: Helper untuk membina kandungan maklum balas yang diformat dalam Bahasa Melayu ⭐
   Widget buildFeedbackContent(String message, bool? isCorrect) {
     final textColor = isCorrect == true
         ? Colors.green[900]
