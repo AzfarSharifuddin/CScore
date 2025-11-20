@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 import 'package:cscore/DashboardModule/Screens/student_profile.dart';
+import 'package:cscore/DashboardModule/Screens/activity_details.dart'; // 🔹 Add this import
 
 class StudentDashboard extends StatelessWidget {
   const StudentDashboard({super.key});
@@ -23,7 +24,6 @@ class StudentDashboard extends StatelessWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
-            // 🔹 Top Buttons (Fixed Text Wrapping)
             Row(
               children: [
                 Expanded(
@@ -33,12 +33,6 @@ class StudentDashboard extends StatelessWidget {
                     },
                     icon: const Icon(Icons.school_rounded),
                     label: const FittedBox(child: Text('Modules')),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -49,12 +43,6 @@ class StudentDashboard extends StatelessWidget {
                     },
                     icon: const Icon(Icons.quiz_rounded),
                     label: const FittedBox(child: Text('Quizzes')),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -65,24 +53,16 @@ class StudentDashboard extends StatelessWidget {
                     },
                     icon: const Icon(Icons.forum_rounded),
                     label: const FittedBox(child: Text('Forum')),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
                   ),
                 ),
               ],
             ),
 
             const SizedBox(height: 24),
-
             const Text('Upcoming Activities',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
 
-            // 🔹 Firestore Activities
             StreamBuilder(
               stream: FirebaseFirestore.instance
                   .collection('activities')
@@ -100,23 +80,34 @@ class StudentDashboard extends StatelessWidget {
                   children: snapshot.data!.docs.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
 
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      child: ListTile(
-                        leading: Icon(Icons.event_note,
-                            color: Colors.blue[600]),
-                        title: Text(
-                          data['title'] ?? '',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 15),
+                    return InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ActivityDetailsPage(activityId: doc.id),
+                          ),
+                        );
+                      },
+                      child: Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: ListTile(
+                          leading: Icon(Icons.event_note,
+                              color: Colors.blue[600]),
+                          title: Text(
+                            data['title'] ?? '',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                          subtitle: Text(
+                            "${(data['deadline'] as Timestamp).toDate().toString().substring(0, 10)}\n"
+                            "${data['description'] ?? ''}",
+                          ),
+                          isThreeLine: true,
                         ),
-                        subtitle: Text(
-                          "${(data['deadline'] as Timestamp).toDate().toString().substring(0, 10)}\n"
-                          "${data['description'] ?? ''}",
-                        ),
-                        isThreeLine: true,
                       ),
                     );
                   }).toList(),
@@ -125,12 +116,10 @@ class StudentDashboard extends StatelessWidget {
             ),
 
             const SizedBox(height: 16),
-
             const Text('Announcements',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
 
-            // 🔹 Firestore Announcements
             StreamBuilder(
               stream: FirebaseFirestore.instance
                   .collection('announcement')
@@ -148,7 +137,6 @@ class StudentDashboard extends StatelessWidget {
                 return Column(
                   children: snapshot.data!.docs.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
-
                     return Card(
                       margin: const EdgeInsets.only(bottom: 8),
                       shape: RoundedRectangleBorder(
