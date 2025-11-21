@@ -8,6 +8,7 @@ import '../Models/Announcement.dart';
 import '../Models/Activity.dart';
 import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 import 'package:cscore/DashboardModule/Screens/teacher_profile.dart';
+import 'activity_details.dart'; // 👈 ADD THIS to enable details page
 
 class TeacherDashboard extends StatelessWidget {
   const TeacherDashboard({super.key});
@@ -36,6 +37,7 @@ class TeacherDashboard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
+            // 🔹 Top Button Menu
             Row(
               children: [
                 Expanded(
@@ -115,8 +117,7 @@ class TeacherDashboard extends StatelessWidget {
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.forum_rounded,
-                              color: Colors.black87, size: 20),
+                          Icon(Icons.forum_rounded, color: Colors.black87, size: 20),
                           SizedBox(width: 8),
                           Text(
                             "Forum",
@@ -143,15 +144,17 @@ class TeacherDashboard extends StatelessWidget {
 
             const SizedBox(height: 20),
 
+            // 🔹 New Activities Header
             const Text(
               'New Activities',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
 
+            // 🔹 FETCH ACTIVITIES (Clickable for Details)
             StreamBuilder(
               stream: FirebaseFirestore.instance
-                  .collection('activity')  // 🔹 UPDATED HERE
+                  .collection('activity')
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
@@ -166,7 +169,21 @@ class TeacherDashboard extends StatelessWidget {
                 return Column(
                   children: snapshot.data!.docs.map((doc) {
                     final activity = Activity.fromFirestore(doc);
-                    return ActivityCard(activity: activity);
+
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ActivityDetailsPage(
+                              activityId: doc.id,
+                              isTeacher: true, // 👈 Enable Edit & Delete
+                            ),
+                          ),
+                        );
+                      },
+                      child: ActivityCard(activity: activity),
+                    );
                   }).toList(),
                 );
               },
@@ -174,12 +191,14 @@ class TeacherDashboard extends StatelessWidget {
 
             const SizedBox(height: 24),
 
+            // 🔹 Announcements Header
             const Text(
               'Announcements',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
 
+            // 🔹 FETCH ANNOUNCEMENTS
             StreamBuilder(
               stream: FirebaseFirestore.instance
                   .collection('announcement')
@@ -206,12 +225,14 @@ class TeacherDashboard extends StatelessWidget {
         ),
       ),
 
+      // 🔹 Bottom Navigation Bar
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
-            BoxShadow(color: Colors.black12.withOpacity(0.08), blurRadius: 12),
+            BoxShadow(
+                color: Colors.black12.withOpacity(0.08), blurRadius: 12),
           ],
         ),
         child: BottomNavigationBar(
