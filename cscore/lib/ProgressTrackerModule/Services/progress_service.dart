@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:async/async.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:cscore/ProgressTrackerModule/Model/progress_record.dart';
+import 'package:cscore/ProgressTrackerModule/Model/badge_model.dart';
 
 class ProgressService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -98,6 +99,35 @@ class ProgressService {
   });
 }
 
+Future<void> awardBadgeIfEligible(String userId, ProgressRecord record) async {
+  if (record.type == 'quiz' && record.status == 'completed') {
+    final badgeRef = _db
+        .collection('user')
+        .doc(userId)
+        .collection('badge')
+        .doc(record.id); // quizId = badgeId
+
+    final exists = await badgeRef.get();
+    if (!exists.exists) {
+      await badgeRef.set({
+        'title': '${record.activityName} Completed',
+        'iconUrl': 'https://your-icon-url.com/${record.id}.png',
+        'earnedAt': DateTime.now(),
+      });
+    }
+  }
+}
+
+Stream<List<BadgeModel>> getUserBadges(String userId) {
+  return _db
+      .collection('user')
+      .doc(userId)
+      .collection('badge')
+      .snapshots()
+      .map((s) => s.docs
+          .map((d) => BadgeModel.fromMap(d.data(), d.id))
+          .toList());
+}
 
 
   /// STREAM — Combine both manual + quiz

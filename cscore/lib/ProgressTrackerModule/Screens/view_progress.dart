@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cscore/ProgressTrackerModule/Services/progress_service.dart';
 import 'package:cscore/ProgressTrackerModule/Model/progress_record.dart';
+import 'package:cscore/ProgressTrackerModule/Model/badge_model.dart';
 import 'edit_progress_page.dart';
 import 'add_learning_progress.dart';
 import 'add_activity_progress.dart';
@@ -30,21 +31,88 @@ class ViewProgressScreen extends StatelessWidget {
             title: const Text(
               "My Progress",
               style: TextStyle(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22),
+                  color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 22),
             ),
             centerTitle: true,
           ),
-          body: _buildProgressBody(context, userId),
+          body: Column(
+            children: [
+              // 📌 Badges Section — Top of Progress Page
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: StreamBuilder<List<BadgeModel>>(
+                  stream: _progressService.getUserBadges(userId),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text(
+                          "No badges earned yet 🏆",
+                          style: TextStyle(color: Colors.grey, fontSize: 15),
+                        ),
+                      );
+                    }
+
+                    final badges = snapshot.data!;
+                    return SizedBox(
+                      height: 100,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: badges.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (context, i) {
+                          return Column(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 3))
+                                  ],
+                                ),
+                                child: CircleAvatar(
+                                  radius: 32,
+                                  backgroundImage:
+                                      NetworkImage(badges[i].iconUrl),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              SizedBox(
+                                width: 80,
+                                child: Text(
+                                  badges[i].title,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // 📈 Progress Records Section
+              Expanded(child: _buildProgressBody(context, userId)),
+            ],
+          ),
+
+          // ➕ Floating Add Button
           floatingActionButton: FloatingActionButton(
             backgroundColor: Colors.black,
             onPressed: () {
               showModalBottomSheet(
                 context: context,
                 shape: const RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(20))),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
                 builder: (_) => Wrap(children: [
                   ListTile(
                     leading: const Icon(Icons.school_rounded),
@@ -78,14 +146,16 @@ class ViewProgressScreen extends StatelessWidget {
     );
   }
 
+  // 📄 Progress Records List
   Widget _buildProgressBody(BuildContext context, String userId) {
     return StreamBuilder<List<ProgressRecord>>(
       stream: _progressService.getCombinedProgress(userId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(
-              child: Text("Error: ${snapshot.error}",
-                  style: const TextStyle(color: Colors.red)));
+            child: Text("Error: ${snapshot.error}",
+                style: const TextStyle(color: Colors.red)),
+          );
         }
 
         if (!snapshot.hasData) {
@@ -95,10 +165,12 @@ class ViewProgressScreen extends StatelessWidget {
         final progress = snapshot.data!;
         if (progress.isEmpty) {
           return const Center(
-              child: Text(
-                  "No progress yet.\nTap + to add your first record!",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey)));
+            child: Text(
+              "No progress yet.\nTap + to add your first record!",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          );
         }
 
         return ListView.separated(
@@ -127,9 +199,9 @@ class ViewProgressScreen extends StatelessWidget {
 
             return GestureDetector(
               onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => EditProgressPage(record: p))),
+                context,
+                MaterialPageRoute(builder: (_) => EditProgressPage(record: p)),
+              ),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
@@ -149,8 +221,9 @@ class ViewProgressScreen extends StatelessWidget {
                       height: 46,
                       width: 46,
                       decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(12)),
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: Icon(
                         isLearning
                             ? Icons.school_rounded
@@ -187,90 +260,28 @@ class ViewProgressScreen extends StatelessWidget {
                           ]),
                     ),
 
-                    // DELETE BUTTON with CONFIRMATION
                     IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
                       onPressed: () async {
                         final confirm = await showDialog<bool>(
                           context: context,
-                          builder: (_) => Dialog(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20)),
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.warning_amber_rounded,
-                                      size: 60, color: Colors.red),
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    "Delete Progress?",
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  const Text(
-                                    "Are you sure you want to delete this record? "
-                                    "This action cannot be undone.",
-                                    style: TextStyle(
-                                        fontSize: 15, color: Colors.black54),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 24),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(false),
-                                          style: TextButton.styleFrom(
-                                            padding:
-                                                const EdgeInsets.symmetric(
-                                                    vertical: 12),
-                                            shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(10)),
-                                          ),
-                                          child: const Text("Cancel",
-                                              style: TextStyle(
-                                                  fontSize: 16,
-                                                  color: Colors.grey)),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: ElevatedButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(true),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red,
-                                            padding:
-                                                const EdgeInsets.symmetric(
-                                                    vertical: 12),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                            elevation: 3,
-                                          ),
-                                          child: const Text(
-                                            "Delete",
-                                            style: TextStyle(
-                                                fontSize: 16,
-                                                color: Colors.white),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                          builder: (_) => AlertDialog(
+                            title: const Text("Delete Progress"),
+                            content: const Text(
+                                "Are you sure you want to delete this record? This action cannot be undone."),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(context).pop(false),
+                                child: const Text("Cancel"),
                               ),
-                            ),
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(context).pop(true),
+                                child: const Text("Delete",
+                                    style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
                           ),
                         );
 
