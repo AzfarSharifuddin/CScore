@@ -60,7 +60,7 @@ class _RegisterPageState extends State<RegisterPage> {
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      await _firestore.collection('users').doc(uid).set(userDoc);
+      await _firestore.collection('user').doc(uid).set(userDoc);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -31,7 +31,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
   Future<void> loadProfile() async {
     final uid = _auth.currentUser!.uid;
-    final doc = await _firestore.collection("users").doc(uid).get();
+    final doc = await _firestore.collection("user").doc(uid).get();
 
     if (doc.exists) {
       final data = doc.data()!;
@@ -77,7 +77,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       }
 
       // Update Firestore
-      await _firestore.collection("users").doc(uid).update({
+      await _firestore.collection("user").doc(uid).update({
         "name": newName,
         "email": newEmail,
         "updatedAt": Timestamp.now(),

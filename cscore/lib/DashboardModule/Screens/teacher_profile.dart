@@ -33,7 +33,7 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
 
-    final doc = await _firestore.collection('users').doc(uid).get();
+    final doc = await _firestore.collection('user').doc(uid).get();
 
     qualifications = await _getAllQualifications();
 
@@ -52,7 +52,7 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
     if (uid == null) return [];
 
     final snapshot = await _firestore
-        .collection('users')
+        .collection('user')
         .doc(uid)
         .collection('qualification')
         .orderBy('createdAt', descending: true)

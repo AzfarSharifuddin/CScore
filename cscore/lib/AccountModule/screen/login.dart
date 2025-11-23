@@ -44,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
       final uid = userCredential.user!.uid;
 
       // 2) Get user document
-      final doc = await _firestore.collection('users').doc(uid).get();
+      final doc = await _firestore.collection('user').doc(uid).get();
 
       if (!doc.exists) {
         await _auth.signOut();

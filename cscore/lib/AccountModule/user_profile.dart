@@ -33,7 +33,7 @@ class _UserProfileState extends State<UserProfile> {
       }
 
       final doc = await FirebaseFirestore.instance
-          .collection('users')
+          .collection('user')
           .doc(user.uid)
           .get();
 

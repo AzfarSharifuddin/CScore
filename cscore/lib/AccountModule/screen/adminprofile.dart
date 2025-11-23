@@ -38,7 +38,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     }
 
     try {
-      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final doc = await _firestore.collection('user').doc(user.uid).get();
       if (!mounted) return;
       setState(() {
         _userData = doc.data() ?? {

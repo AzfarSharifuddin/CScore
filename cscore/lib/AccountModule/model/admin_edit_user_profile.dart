@@ -19,7 +19,7 @@ class _AdminEditUserProfileState extends State<AdminEditUserProfile> {
 
   // LOAD USER DATA
   Future<void> _loadUserData() async {
-    final doc = await _firestore.collection('users').doc(widget.userId).get();
+    final doc = await _firestore.collection('user').doc(widget.userId).get();
     if (doc.exists) {
       _nameController.text = doc['name'] ?? '';
     }
@@ -38,7 +38,7 @@ class _AdminEditUserProfileState extends State<AdminEditUserProfile> {
     setState(() => _saving = true);
 
     try {
-      await _firestore.collection('users').doc(widget.userId).update({
+      await _firestore.collection('user').doc(widget.userId).update({
         'name': _nameController.text.trim(),
         'updatedAt': Timestamp.now(),
       });

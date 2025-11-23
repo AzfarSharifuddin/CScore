@@ -30,7 +30,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final batch = _firestore.batch();
 
     final pending = await _firestore
-        .collection('users')
+        .collection('user')
         .where('status', isEqualTo: 'Pending')
         .get();
 
@@ -48,7 +48,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   void _updateUserStatus(String docId, String status) async {
-    await _firestore.collection('users').doc(docId).update({
+    await _firestore.collection('user').doc(docId).update({
       'status': status,
       'updatedAt': Timestamp.now(),
     });
@@ -60,7 +60,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   void _deleteUser(String docId) async {
     try {
-      await _firestore.collection('users').doc(docId).delete();
+      await _firestore.collection('user').doc(docId).delete();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('User deleted.')),
       );
@@ -247,7 +247,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: _firestore.collection('users').snapshots(),
+            stream: _firestore.collection('user').snapshots(),
             builder: (_, snapshot) {
               if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
@@ -365,7 +365,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
 
           Expanded(
-            child: selectedTab == "users"
+            child: selectedTab == "user"
                 ? _buildUserList()
                 : const Forum(),
           ),

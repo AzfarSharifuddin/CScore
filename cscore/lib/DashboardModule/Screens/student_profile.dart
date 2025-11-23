@@ -27,7 +27,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
 
-    final doc = await _firestore.collection('users').doc(uid).get();
+    final doc = await _firestore.collection('user').doc(uid).get();
     if (!mounted) return;
 
     setState(() {
