@@ -119,15 +119,16 @@ Future<void> awardBadgeIfEligible(String userId, ProgressRecord record) async {
 }
 
 Stream<List<BadgeModel>> getUserBadges(String userId) {
-  return _db
+  return FirebaseFirestore.instance
       .collection('user')
       .doc(userId)
       .collection('badge')
       .snapshots()
-      .map((s) => s.docs
-          .map((d) => BadgeModel.fromMap(d.data(), d.id))
+      .map((snapshot) => snapshot.docs
+          .map((doc) => BadgeModel.fromMap(doc.data(), doc.id))
           .toList());
 }
+
 
 
   /// STREAM — Combine both manual + quiz

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cscore/ProgressTrackerModule/Services/progress_service.dart';
 import 'package:cscore/ProgressTrackerModule/Model/progress_record.dart';
-import 'package:cscore/ProgressTrackerModule/Model/badge_model.dart';
+
+import 'badge_page.dart';
 import 'edit_progress_page.dart';
 import 'add_learning_progress.dart';
 import 'add_activity_progress.dart';
@@ -31,112 +32,70 @@ class ViewProgressScreen extends StatelessWidget {
             title: const Text(
               "My Progress",
               style: TextStyle(
-                  color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 22),
+                color: Colors.black87,
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+              ),
             ),
             centerTitle: true,
-          ),
-          body: Column(
-            children: [
-              // 📌 Badges Section — Top of Progress Page
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: StreamBuilder<List<BadgeModel>>(
-                  stream: _progressService.getUserBadges(userId),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text(
-                          "No badges earned yet 🏆",
-                          style: TextStyle(color: Colors.grey, fontSize: 15),
-                        ),
-                      );
-                    }
-
-                    final badges = snapshot.data!;
-                    return SizedBox(
-                      height: 100,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: badges.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (context, i) {
-                          return Column(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 3))
-                                  ],
-                                ),
-                                child: CircleAvatar(
-                                  radius: 32,
-                                  backgroundImage:
-                                      NetworkImage(badges[i].iconUrl),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              SizedBox(
-                                width: 80,
-                                child: Text(
-                                  badges[i].title,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.emoji_events_outlined,
+                    color: Colors.black),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const BadgePage(), // <-- no userId param
+                    ),
+                  );
+                },
               ),
-
-              // 📈 Progress Records Section
-              Expanded(child: _buildProgressBody(context, userId)),
             ],
           ),
 
-          // ➕ Floating Add Button
+          // Body: only progress list now
+          body: _buildProgressBody(context, userId),
+
           floatingActionButton: FloatingActionButton(
             backgroundColor: Colors.black,
             onPressed: () {
               showModalBottomSheet(
                 context: context,
                 shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-                builder: (_) => Wrap(children: [
-                  ListTile(
-                    leading: const Icon(Icons.school_rounded),
-                    title: const Text("Add Learning Progress"),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (_) => Wrap(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.school_rounded),
+                      title: const Text("Add Learning Progress"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const AddLearningProgressPage()));
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.fitness_center_rounded),
-                    title: const Text("Add Activity Progress"),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                            builder: (_) => const AddLearningProgressPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.fitness_center_rounded),
+                      title: const Text("Add Activity Progress"),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const AddActivityProgressPage()));
-                    },
-                  ),
-                ]),
+                            builder: (_) => const AddActivityProgressPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               );
             },
             child: const Icon(Icons.add, color: Colors.white),
@@ -146,15 +105,17 @@ class ViewProgressScreen extends StatelessWidget {
     );
   }
 
-  // 📄 Progress Records List
+  // Progress Records List
   Widget _buildProgressBody(BuildContext context, String userId) {
     return StreamBuilder<List<ProgressRecord>>(
       stream: _progressService.getCombinedProgress(userId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(
-            child: Text("Error: ${snapshot.error}",
-                style: const TextStyle(color: Colors.red)),
+            child: Text(
+              "Error: ${snapshot.error}",
+              style: const TextStyle(color: Colors.red),
+            ),
           );
         }
 
@@ -200,7 +161,9 @@ class ViewProgressScreen extends StatelessWidget {
             return GestureDetector(
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => EditProgressPage(record: p)),
+                MaterialPageRoute(
+                  builder: (_) => EditProgressPage(record: p),
+                ),
               ),
               child: Container(
                 padding:
@@ -210,9 +173,10 @@ class ViewProgressScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3))
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
                   ],
                 ),
                 child: Row(
@@ -236,30 +200,40 @@ class ViewProgressScreen extends StatelessWidget {
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(p.activityName,
-                                style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 4),
-                            if (isLearning || isQuiz)
-                              Text("Status: ${p.status}",
-                                  style: TextStyle(
-                                      fontSize: 14,
-                                      color: statusColor,
-                                      fontWeight: FontWeight.w600))
-                            else
-                              Text("Score: ${p.score.toStringAsFixed(1)}",
-                                  style: const TextStyle(
-                                      fontSize: 14, color: Colors.grey)),
-                            const SizedBox(height: 2),
-                            Text("${p.completedAt}",
-                                style: const TextStyle(
-                                    fontSize: 12, color: Colors.grey)),
-                          ]),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            p.activityName,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          if (isLearning || isQuiz)
+                            Text(
+                              "Status: ${p.status}",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: statusColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            )
+                          else
+                            Text(
+                              "Score: ${p.score.toStringAsFixed(1)}",
+                              style: const TextStyle(
+                                  fontSize: 14, color: Colors.grey),
+                            ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "${p.completedAt}",
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ),
-
                     IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
                       onPressed: () async {
@@ -268,7 +242,8 @@ class ViewProgressScreen extends StatelessWidget {
                           builder: (_) => AlertDialog(
                             title: const Text("Delete Progress"),
                             content: const Text(
-                                "Are you sure you want to delete this record? This action cannot be undone."),
+                              "Are you sure you want to delete this record? This action cannot be undone.",
+                            ),
                             actions: [
                               TextButton(
                                 onPressed: () =>
@@ -278,8 +253,10 @@ class ViewProgressScreen extends StatelessWidget {
                               TextButton(
                                 onPressed: () =>
                                     Navigator.of(context).pop(true),
-                                child: const Text("Delete",
-                                    style: TextStyle(color: Colors.red)),
+                                child: const Text(
+                                  "Delete",
+                                  style: TextStyle(color: Colors.red),
+                                ),
                               ),
                             ],
                           ),
