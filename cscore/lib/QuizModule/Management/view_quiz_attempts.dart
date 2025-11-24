@@ -56,7 +56,7 @@ class _ViewQuizAttemptsPageState extends State<ViewQuizAttemptsPage> {
 
         // Fetch user info
         final userSnap = await FirebaseFirestore.instance
-            .collection('users')
+            .collection('user')
             .doc(userId)
             .get();
 
