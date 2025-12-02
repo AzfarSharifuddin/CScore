@@ -60,7 +60,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   void _deleteUser(String docId) async {
     try {
-      await _firestore.collection('user').doc(docId).delete();
+      await _firestore.collection('users').doc(docId).delete();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('User deleted.')),
       );
@@ -365,7 +365,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
 
           Expanded(
-            child: selectedTab == "user"
+            child: selectedTab == "users"
                 ? _buildUserList()
                 : const Forum(),
           ),
