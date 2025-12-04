@@ -72,6 +72,17 @@ class _LoginPageState extends State<LoginPage> {
         _showError("Your account has been suspended.");
         return;
       }
+      // User self-deactivated → reactivate on login
+        if (status == "Deactivated") {
+          await _firestore.collection("user").doc(uid).update({
+            "status": "Active",
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Welcome back! Your account is active again.")),
+          );
+        }
+
 
       // ✅ 4) ROUTE BY ROLE
       Widget nextPage;

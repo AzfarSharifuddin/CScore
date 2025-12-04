@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cscore/AccountModule/screen/profile_edit.dart';
+import 'package:cscore/AccountModule/screen/deactivateaccount.dart';
 
 class StudentProfilePage extends StatefulWidget {
   const StudentProfilePage({super.key});
@@ -156,6 +157,21 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                           await _loadUser();
                         },
                       ),
+                      const SizedBox(height: 12),
+
+                        buildProfileButton(
+                          icon: Icons.pause_circle_filled_rounded,
+                          text: 'Deactivate Account',
+                          iconColor: Colors.orange,
+                          textColor: Colors.orange,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const DeactivateAccountPage()),
+                            );
+                          },
+                        ),
+
 
                       const SizedBox(height: 12),
 
