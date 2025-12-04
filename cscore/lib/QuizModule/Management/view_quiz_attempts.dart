@@ -1,10 +1,10 @@
-// lib/QuizModule/Management/view_quiz_attempts.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:cscore/QuizModule/Models/student_attempt_row.dart';
 import 'package:cscore/QuizModule/Management/student_attempt_tile.dart';
+import 'package:cscore/QuizModule/Services/quiz_service.dart';
 import 'edit_quiz.dart';
+import 'manage_quiz.dart';
 
 const Color mainColor = Color.fromRGBO(0, 70, 67, 1);
 
@@ -33,8 +33,9 @@ class ViewQuizAttemptsPage extends StatefulWidget {
 
 class _ViewQuizAttemptsPageState extends State<ViewQuizAttemptsPage> {
   SortBy _sortBy = SortBy.latestAttempt;
+  bool _isDeleting = false;
 
-  /// SAFE version of attemptsStream()
+  /// Stream of student attempts for THIS quiz only
   Stream<List<StudentAttemptRow>> attemptsStream() {
     final quizId = widget.quizId;
 
@@ -45,7 +46,7 @@ class _ViewQuizAttemptsPageState extends State<ViewQuizAttemptsPage> {
       final rows = <StudentAttemptRow>[];
 
       for (final doc in snap.docs) {
-        /// Filter: Only this quiz
+        // Filter only the current quiz
         if (doc.id != quizId) continue;
 
         final parent = doc.reference.parent.parent;
@@ -54,7 +55,7 @@ class _ViewQuizAttemptsPageState extends State<ViewQuizAttemptsPage> {
         final userId = parent.id;
         final data = doc.data();
 
-        // Fetch user info
+        // Fetch user info from 'user' collection
         final userSnap = await FirebaseFirestore.instance
             .collection('user')
             .doc(userId)
@@ -64,15 +65,17 @@ class _ViewQuizAttemptsPageState extends State<ViewQuizAttemptsPage> {
         final userName = userData?['name'] ?? userData?['email'] ?? 'Unknown';
         final userEmail = userData?['email'] ?? '';
 
-        rows.add(StudentAttemptRow.fromProgressDoc(
-          userId: userId,
-          progressData: data,
-          userName: userName,
-          userEmail: userEmail,
-        ));
+        rows.add(
+          StudentAttemptRow.fromProgressDoc(
+            userId: userId,
+            progressData: data,
+            userName: userName,
+            userEmail: userEmail,
+          ),
+        );
       }
 
-      // Sorting system
+      // Sorting
       rows.sort((a, b) {
         switch (_sortBy) {
           case SortBy.highestScore:
@@ -114,6 +117,61 @@ class _ViewQuizAttemptsPageState extends State<ViewQuizAttemptsPage> {
     }
   }
 
+  Future<void> _confirmAndDeleteQuiz() async {
+    if (_isDeleting) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Quiz'),
+        content: Text(
+          'Are you sure you want to delete the quiz "${widget.quizTitle}"?\n\n'
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isDeleting = true);
+
+    final success = await QuizService().deleteQuiz(widget.quizId);
+
+    if (!mounted) return;
+
+    setState(() => _isDeleting = false);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Quiz deleted successfully.')),
+      );
+
+      // Go back to ManageQuizzesPage
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const ManageQuizzesPage()),
+        (route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete quiz. Please try again.'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -123,22 +181,31 @@ class _ViewQuizAttemptsPageState extends State<ViewQuizAttemptsPage> {
       ),
       body: Column(
         children: [
-          // Sorting section
+          // Sorting controls
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                const Text("Sort by:",
-                    style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text(
+                  "Sort by:",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButton<SortBy>(
                     value: _sortBy,
                     isExpanded: true,
-                    onChanged: (s) => setState(() => _sortBy = s!),
+                    onChanged: (s) {
+                      if (s == null) return;
+                      setState(() => _sortBy = s);
+                    },
                     items: SortBy.values
-                        .map((s) =>
-                            DropdownMenuItem(value: s, child: Text(_sortLabel(s))))
+                        .map(
+                          (s) => DropdownMenuItem(
+                            value: s,
+                            child: Text(_sortLabel(s)),
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
@@ -174,39 +241,52 @@ class _ViewQuizAttemptsPageState extends State<ViewQuizAttemptsPage> {
             ),
           ),
 
-          // Bottom actions
+          // Bottom buttons
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
               children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: mainColor,
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            EditQuizPage(quizId: widget.quizId),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    "Edit Quiz",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: mainColor,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditQuizPage(quizId: widget.quizId),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "Edit Quiz",
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48),
-                    side: const BorderSide(color: Colors.red),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: _isDeleting ? null : _confirmAndDeleteQuiz,
+                    child: _isDeleting
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text(
+                            "Delete Quiz",
+                            style: TextStyle(color: Colors.red),
+                          ),
                   ),
-                  onPressed: null, // delete disabled (per your spec)
-                  child:
-                      const Text("Delete Quiz", style: TextStyle(color: Colors.red)),
                 ),
               ],
             ),
