@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cscore/AccountModule/screen/profile_edit.dart';
 import 'package:cscore/AccountModule/model/manage_qualification.dart';
 import 'package:cscore/AccountModule/screen/qualification_manage.dart';
+import 'package:cscore/AccountModule/screen/deactivateaccount.dart';
 
 class TeacherProfilePage extends StatefulWidget {
   const TeacherProfilePage({super.key});
@@ -75,7 +76,7 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
     );
     await _loadUser();
   }
-
+  
   // ------------------------------
   // MANAGE QUALIFICATIONS
   // ------------------------------
@@ -248,6 +249,20 @@ class _TeacherProfilePageState extends State<TeacherProfilePage> {
                         onPressed: _openQualificationManager,
                       ),
                       const SizedBox(height: 12),
+                        const SizedBox(height: 12),
+
+                        buildProfileButton(
+                          icon: Icons.pause_circle_filled_rounded,
+                          text: 'Deactivate Account',
+                          iconColor: Colors.orange,
+                          textColor: Colors.orange,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const DeactivateAccountPage()),
+                            );
+                          },
+                        ),
 
                       buildProfileButton(
                         icon: Icons.logout_rounded,

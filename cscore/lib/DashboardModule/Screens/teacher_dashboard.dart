@@ -10,6 +10,7 @@ import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 import 'package:cscore/DashboardModule/Screens/teacher_profile.dart';
 import 'activity_details.dart'; // 👈 ADD THIS to enable details page
 
+
 class TeacherDashboard extends StatelessWidget {
   const TeacherDashboard({super.key});
 

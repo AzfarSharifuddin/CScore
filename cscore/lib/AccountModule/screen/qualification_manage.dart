@@ -29,7 +29,7 @@ class _ManageQualificationPageState extends State<ManageQualificationPage> {
     final uid = _auth.currentUser!.uid;
 
     await _firestore
-        .collection('users')
+        .collection('user')
         .doc(uid)
         .collection('qualification')
         .add({
@@ -80,7 +80,7 @@ class _ManageQualificationPageState extends State<ManageQualificationPage> {
     final uid = _auth.currentUser!.uid;
 
     await _firestore
-        .collection('users')
+        .collection('user')
         .doc(uid)
         .collection('qualification')
         .doc(id)
@@ -103,7 +103,7 @@ class _ManageQualificationPageState extends State<ManageQualificationPage> {
       ),
       body: StreamBuilder(
         stream: _firestore
-            .collection('users')
+            .collection('user')
             .doc(uid)
             .collection('qualification')
             .orderBy('createdAt', descending: true)
