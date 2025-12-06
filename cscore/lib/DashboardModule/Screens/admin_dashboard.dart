@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cscore/AccountModule/model/admin_edit_user_profile.dart'; // ← Import edit screen
+import 'package:cscore/AccountModule/model/admin_edit_user_profile.dart';
 import 'package:cscore/ForumModule/forum.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -14,6 +14,7 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   String selectedTab = "users";
   String selectedFilter = "All";
+  String selectedSort = "A-Z"; // 🔥 NEW: sorting mode
   String searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
 
@@ -60,7 +61,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   void _deleteUser(String docId) async {
     try {
-      await _firestore.collection('users').doc(docId).delete();
+      // 🔥 FIXED: use 'user' collection, not 'users'
+      await _firestore.collection('user').doc(docId).delete();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('User deleted.')),
       );
@@ -71,8 +73,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  // 👤 SHOW USER DETAILS WITH EDIT BUTTON
+  // 👤 SHOW USER DETAILS WITH EDIT + ROLE BUTTONS
   void _showUserProfile(Map<String, dynamic> user, String docId) {
+    final String roleString = (user["role"] ?? "").toString();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -89,9 +93,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text("User Profile",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-
+            const Text(
+              "User Profile",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 20),
             ListTile(
               leading: CircleAvatar(
@@ -116,7 +121,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
             const SizedBox(height: 20),
 
-            // 📝 EDIT PROFILE BUTTON (NEW)
+            // 📝 EDIT PROFILE BUTTON (existing)
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.pop(context);
@@ -137,6 +142,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
             const SizedBox(height: 10),
 
+            // 🔥 NEW: CHANGE ROLE BUTTON (Student <-> Teacher ONLY)
+            if (roleString.toLowerCase() != "admin")
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showRoleEditDialog(docId, roleString);
+                },
+                icon: const Icon(Icons.swap_horiz),
+                label: const Text("Change User Role"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
+
+            if (roleString.toLowerCase() != "admin")
+              const SizedBox(height: 10),
+
             if (user["status"] == "Pending")
               ElevatedButton.icon(
                 onPressed: () {
@@ -151,7 +174,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ),
 
-            const SizedBox(height: 10),
+            if (user["status"] == "Pending")
+              const SizedBox(height: 10),
 
             ElevatedButton.icon(
               onPressed: () {
@@ -187,6 +211,65 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  // 🔥 NEW: ROLE EDIT DIALOG (Student <-> Teacher only)
+  void _showRoleEditDialog(String userId, String currentRole) {
+    String tempRole = currentRole;
+
+    // Only allow Student & Teacher
+    final allowedRoles = ["Student", "Teacher"];
+
+    if (!allowedRoles.contains(currentRole)) {
+      // If current role is something else, default to Student
+      tempRole = "Student";
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Edit User Role"),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return DropdownButton<String>(
+                value: tempRole,
+                isExpanded: true,
+                items: const [
+                  DropdownMenuItem(value: "Student", child: Text("Student")),
+                  DropdownMenuItem(value: "Teacher", child: Text("Teacher")),
+                ],
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() => tempRole = value);
+                },
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await FirebaseFirestore.instance
+                    .collection('user')
+                    .doc(userId)
+                    .update({"role": tempRole});
+
+                Navigator.pop(context);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Role updated to $tempRole")),
+                );
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildFilterChip(String label) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -219,6 +302,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ),
 
+        // Filter chips row
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -227,6 +311,59 @@ class _AdminDashboardState extends State<AdminDashboard> {
               _buildFilterChip("Pending"),
               _buildFilterChip("Active"),
               _buildFilterChip("Suspended"),
+            ],
+          ),
+        ),
+
+        // 🔥 NEW: SORT DROPDOWN (top-right)
+        Padding(
+          padding: const EdgeInsets.only(right: 12, top: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              DropdownButton<String>(
+  value: selectedSort,
+  style: const TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    color: Colors.black87, // match your filter chip font
+  ),
+  items: const [
+    DropdownMenuItem(
+      value: "A-Z",
+      child: Text(
+        "Name: A → Z",
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+      ),
+    ),
+    DropdownMenuItem(
+      value: "Z-A",
+      child: Text(
+        "Name: Z → A",
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+      ),
+    ),
+    DropdownMenuItem(
+      value: "Role",
+      child: Text(
+        "Role",
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+      ),
+    ),
+    DropdownMenuItem(
+      value: "Status",
+      child: Text(
+        "Status",
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+      ),
+    ),
+  ],
+  onChanged: (value) {
+    if (value == null) return;
+    setState(() => selectedSort = value);
+  },
+),
+
             ],
           ),
         ),
@@ -255,6 +392,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
               List docs = snapshot.data!.docs;
 
+              // Filter by search + status
               docs = docs.where((d) {
                 final user = d.data() as Map<String, dynamic>;
 
@@ -270,6 +408,32 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
                 return matchesSearch && matchesFilter;
               }).toList();
+
+              // 🔥 SORTING LOGIC
+              docs.sort((a, b) {
+                final ua = a.data() as Map<String, dynamic>;
+                final ub = b.data() as Map<String, dynamic>;
+
+                final nameA = (ua["name"] ?? "").toString().toLowerCase();
+                final nameB = (ub["name"] ?? "").toString().toLowerCase();
+                final roleA = (ua["role"] ?? "").toString().toLowerCase();
+                final roleB = (ub["role"] ?? "").toString().toLowerCase();
+                final statusA = (ua["status"] ?? "").toString().toLowerCase();
+                final statusB = (ub["status"] ?? "").toString().toLowerCase();
+
+                switch (selectedSort) {
+                  case "A-Z":
+                    return nameA.compareTo(nameB);
+                  case "Z-A":
+                    return nameB.compareTo(nameA);
+                  case "Role":
+                    return roleA.compareTo(roleB);
+                  case "Status":
+                    return statusA.compareTo(statusB);
+                  default:
+                    return 0;
+                }
+              });
 
               if (docs.isEmpty) {
                 return const Center(
@@ -304,7 +468,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         child: Icon(Icons.person, color: statusColor),
                       ),
                       title: Text(user["name"] ?? user["email"]),
-                      subtitle: Text("${user["role"]}\n${user["email"] ?? ""}"),
+                      subtitle:
+                          Text("${user["role"]}\n${user["email"] ?? ""}"),
                       trailing: Text(
                         "[$status]",
                         style: TextStyle(
@@ -363,11 +528,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ],
             ),
           ),
-
           Expanded(
-            child: selectedTab == "users"
-                ? _buildUserList()
-                : const Forum(),
+            child:
+                selectedTab == "users" ? _buildUserList() : const Forum(),
           ),
         ],
       ),
