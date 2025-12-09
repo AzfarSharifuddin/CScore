@@ -19,13 +19,16 @@ class ViewProgressScreen extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Scaffold(body: Center(child: Text("Login required")));
+          return const Scaffold(
+            body: Center(child: Text("Login required")),
+          );
         }
 
         final userId = snapshot.data!.uid;
 
         return Scaffold(
           backgroundColor: const Color(0xFFF5F5F7),
+
           appBar: AppBar(
             elevation: 0,
             backgroundColor: const Color(0xFFF5F5F7),
@@ -38,6 +41,8 @@ class ViewProgressScreen extends StatelessWidget {
               ),
             ),
             centerTitle: true,
+
+            // ⭐ FIXED: Badge icon ALWAYS visible
             actions: [
               IconButton(
                 icon: const Icon(Icons.emoji_events_outlined,
@@ -46,7 +51,7 @@ class ViewProgressScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const BadgePage(), // <-- no userId param
+                      builder: (_) => const BadgePage(),
                     ),
                   );
                 },
@@ -54,58 +59,60 @@ class ViewProgressScreen extends StatelessWidget {
             ],
           ),
 
-          // Body: only progress list now
           body: _buildProgressBody(context, userId),
-
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: Colors.black,
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                shape: const RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                builder: (_) => Wrap(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.school_rounded),
-                      title: const Text("Add Learning Progress"),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AddLearningProgressPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.fitness_center_rounded),
-                      title: const Text("Add Activity Progress"),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AddActivityProgressPage(),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
-            child: const Icon(Icons.add, color: Colors.white),
-          ),
+          floatingActionButton: _buildFAB(context),
         );
       },
     );
   }
 
-  // Progress Records List
+  // ⭐ Floating button
+  Widget _buildFAB(BuildContext context) {
+    return FloatingActionButton(
+      backgroundColor: Colors.black,
+      onPressed: () {
+        showModalBottomSheet(
+          context: context,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.school_rounded),
+                title: const Text("Add Learning Progress"),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AddLearningProgressPage(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.fitness_center_rounded),
+                title: const Text("Add Activity Progress"),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AddActivityProgressPage(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+      child: const Icon(Icons.add, color: Colors.white),
+    );
+  }
+
+  // ⭐ Progress list UI
   Widget _buildProgressBody(BuildContext context, String userId) {
     return StreamBuilder<List<ProgressRecord>>(
       stream: _progressService.getCombinedProgress(userId),
@@ -198,6 +205,8 @@ class ViewProgressScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
+
+                    // Text section
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,6 +219,7 @@ class ViewProgressScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
+
                           if (isLearning || isQuiz)
                             Text(
                               "Status: ${p.status}",
@@ -225,6 +235,7 @@ class ViewProgressScreen extends StatelessWidget {
                               style: const TextStyle(
                                   fontSize: 14, color: Colors.grey),
                             ),
+
                           const SizedBox(height: 2),
                           Text(
                             "${p.completedAt}",
@@ -234,6 +245,8 @@ class ViewProgressScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+
+                    // Delete button
                     IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
                       onPressed: () async {

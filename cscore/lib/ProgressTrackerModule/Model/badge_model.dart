@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 class BadgeModel {
   final String id;
   final String title;
@@ -8,7 +7,7 @@ class BadgeModel {
   final String description;
   final String status;
   final String quizId;
-  final DateTime earnedAt;
+  final DateTime? earnedAt;  // <-- FIXED: nullable
 
   BadgeModel({
     required this.id,
@@ -17,10 +16,12 @@ class BadgeModel {
     required this.description,
     required this.status,
     required this.quizId,
-    required this.earnedAt,
+    this.earnedAt,   // <-- FIXED
   });
 
   factory BadgeModel.fromMap(Map<String, dynamic> data, String id) {
+    final rawTimestamp = data['earnedAt'];
+
     return BadgeModel(
       id: id,
       title: data['title'] ?? '',
@@ -28,7 +29,11 @@ class BadgeModel {
       description: data['description'] ?? '',
       status: data['status'] ?? 'earned',
       quizId: data['quizId'] ?? '',
-      earnedAt: (data['earnedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+
+      // 🔥 FIX: handle null or missing timestamp properly
+      earnedAt: rawTimestamp is Timestamp
+          ? rawTimestamp.toDate()
+          : null,
     );
   }
 }
