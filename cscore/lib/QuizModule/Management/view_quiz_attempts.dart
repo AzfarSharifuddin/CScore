@@ -1,3 +1,4 @@
+// lib/QuizModule/Management/view_quiz_attempts.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:cscore/QuizModule/Models/student_attempt_row.dart';
@@ -71,6 +72,8 @@ class _ViewQuizAttemptsPageState extends State<ViewQuizAttemptsPage> {
             progressData: data,
             userName: userName,
             userEmail: userEmail,
+            // ⭐ FIX: Added required quizId parameter
+            quizId: widget.quizId, 
           ),
         );
       }
