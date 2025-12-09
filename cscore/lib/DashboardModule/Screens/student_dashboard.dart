@@ -4,17 +4,9 @@ import 'package:cscore/ProgressTrackerModule/Screens/view_progress.dart';
 import 'package:cscore/DashboardModule/Screens/student_profile.dart';
 import 'activity_details.dart';
 
-class Announcement {
-  final String title;
-  final String description;
-  final String date;
-
-  Announcement({
-    required this.title,
-    required this.description,
-    required this.date,
-  });
-}
+// 🔹 IMPORT ANNOUNCEMENT MODEL + CARD
+import '../Models/Announcement.dart';
+import '../Widgets/Announcement_card.dart';
 
 class StudentDashboard extends StatelessWidget {
   const StudentDashboard({super.key});
@@ -38,7 +30,7 @@ class StudentDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // 🔹 FIXED BUTTON ALIGNMENT
+            // 🔹 Dashboard Buttons
             Row(
               children: [
                 Expanded(
@@ -78,6 +70,7 @@ class StudentDashboard extends StatelessWidget {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
 
+            // 🔹 Activities Stream
             StreamBuilder(
               stream: FirebaseFirestore.instance
                   .collection('activity')
@@ -131,6 +124,7 @@ class StudentDashboard extends StatelessWidget {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
 
+            // 🔹 Announcements Stream
             StreamBuilder(
               stream: FirebaseFirestore.instance
                   .collection('announcement')
@@ -147,20 +141,18 @@ class StudentDashboard extends StatelessWidget {
                 return Column(
                   children: snapshot.data!.docs.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
-                    return Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        title: Text(data['Title'] ?? ''),
-                        subtitle: Text(data['Description'] ?? ''),
-                        trailing: Text(
-                          data['Date'] ?? '',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
+
+                    // Convert Firestore → Announcement Model
+                    Announcement announcement = Announcement(
+                      id: doc.id,
+                      title: data['Title'] ?? '',
+                      description: data['Description'] ?? '',
+                      date: data['Date'] ?? '',
+                      createdBy: data['createdBy'] ?? '',
                     );
+
+                    // Use your AnnouncementCard with navigation
+                    return AnnouncementCard(announcement: announcement);
                   }).toList(),
                 );
               },
@@ -204,7 +196,7 @@ class StudentDashboard extends StatelessWidget {
   }
 }
 
-// 🔹 REUSABLE BUTTON FIX
+// 🔹 Custom Dashboard Button
 class CustomDashboardButton extends StatelessWidget {
   final IconData icon;
   final String label;
