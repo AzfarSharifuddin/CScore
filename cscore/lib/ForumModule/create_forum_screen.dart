@@ -31,19 +31,20 @@ class _CreateForumScreenState extends State<CreateForumScreen> {
     }
 
     try {
-      // Fetch user's name to store as the creator's name
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final userDoc = await FirebaseFirestore.instance.collection('user').doc(user.uid).get();
       final creatorName = userDoc.data()?['name'] ?? 'Anonymous';
+      // Get the creator's role
+      final creatorRole = userDoc.data()?['role'] ?? 'Student';
 
-      // Use singular name: 'forum'
       await FirebaseFirestore.instance.collection('forum').add({
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'creatorName': creatorName,
         'creatorId': user.uid,
+        'creatorRole': creatorRole, // <-- Save the role here
         'timestamp': FieldValue.serverTimestamp(),
         'access': _isPublic ? 'public' : 'private',
-        'members': [_isPublic ? 'all' : user.uid], // For private, only teacher is member initially
+        'members': [_isPublic ? 'all' : user.uid],
       });
 
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,63 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
-class CreateForumPostScreen extends StatefulWidget {
+class EditPostScreen extends StatefulWidget {
   final String forumId;
+  final String postId;
+  final String currentTitle;
+  final String currentContent;
 
-  const CreateForumPostScreen({super.key, required this.forumId});
+  const EditPostScreen({
+    super.key,
+    required this.forumId,
+    required this.postId,
+    required this.currentTitle,
+    required this.currentContent,
+  });
 
   @override
-  State<CreateForumPostScreen> createState() => _CreateForumPostScreenState();
+  State<EditPostScreen> createState() => _EditPostScreenState();
 }
 
-class _CreateForumPostScreenState extends State<CreateForumPostScreen> {
+class _EditPostScreenState extends State<EditPostScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _contentController = TextEditingController();
+  late final TextEditingController _titleController;
+  late final TextEditingController _contentController;
   bool _isSubmitting = false;
 
-  Future<void> _publishPost() async {
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.currentTitle);
+    _contentController = TextEditingController(text: widget.currentContent);
+  }
+
+  Future<void> _updatePost() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSubmitting = true);
 
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You must be logged in to post.')),
-      );
-      setState(() => _isSubmitting = false);
-      return;
-    }
-
     try {
-      // Use singular name: 'user'
-      final userDoc = await FirebaseFirestore.instance.collection('user').doc(user.uid).get();
-      final authorName = userDoc.data()?['name'] ?? 'Anonymous';
-
-      // Use singular names: 'forum' and 'post'
       await FirebaseFirestore.instance
           .collection('forum')
           .doc(widget.forumId)
           .collection('post')
-          .add({
+          .doc(widget.postId)
+          .update({
         'title': _titleController.text.trim(),
         'content': _contentController.text.trim(),
-        'authorName': authorName,
-        'authorId': user.uid,
-        'timestamp': FieldValue.serverTimestamp(),
+        'lastEdited': FieldValue.serverTimestamp(), // Track when it was last edited
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Post published successfully!')),
+        const SnackBar(content: Text('Post updated successfully!')),
       );
-      Navigator.pop(context);
+      // Pop twice to go back to the post list
+      Navigator.of(context)..pop()..pop();
 
     } catch (e) {
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to publish post: $e')),
+        SnackBar(content: Text('Failed to update post: $e')),
       );
     }
   }
@@ -73,7 +74,7 @@ class _CreateForumPostScreenState extends State<CreateForumPostScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create New Post'),
+        title: const Text('Edit Post'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -97,7 +98,7 @@ class _CreateForumPostScreenState extends State<CreateForumPostScreen> {
                   expands: true,
                   textAlignVertical: TextAlignVertical.top,
                   decoration: const InputDecoration(
-                    labelText: 'Content / Question',
+                    labelText: 'Content',
                     alignLabelWithHint: true,
                     border: OutlineInputBorder(),
                   ),
@@ -111,9 +112,9 @@ class _CreateForumPostScreenState extends State<CreateForumPostScreen> {
                 child: _isSubmitting
                     ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton.icon(
-                        onPressed: _publishPost,
-                        icon: const Icon(Icons.send),
-                        label: const Text('Publish Post', style: TextStyle(fontSize: 18)),
+                        onPressed: _updatePost,
+                        icon: const Icon(Icons.save_alt),
+                        label: const Text('Save Changes', style: TextStyle(fontSize: 18)),
                       ),
               ),
             ],
