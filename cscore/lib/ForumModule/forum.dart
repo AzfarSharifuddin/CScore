@@ -38,12 +38,57 @@ class _ForumState extends State<Forum> {
     return doc.data()?['role'];
   }
 
+  Future<void> _deleteForum(String forumId) async {
+    // Implement the logic to delete a forum. 
+    // This will require deleting the forum document and potentially all sub-collections (posts, replies) manually.
+    try {
+      final WriteBatch batch = FirebaseFirestore.instance.batch();
+      final forumRef = FirebaseFirestore.instance.collection('forum').doc(forumId);
+
+      // Delete all posts and their replies within the forum
+      final postsSnapshot = await forumRef.collection('post').get();
+      for (final postDoc in postsSnapshot.docs) {
+        final repliesSnapshot = await postDoc.reference.collection('reply').get();
+        for (final replyDoc in repliesSnapshot.docs) {
+          batch.delete(replyDoc.reference); 
+        }
+        batch.delete(postDoc.reference);
+      }
+
+      batch.delete(forumRef); // Delete the forum itself
+      await batch.commit();
+
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Forum deleted successfully.')));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting forum: $e')));
+    }
+  }
+
+  void _showDeleteConfirmation(String forumId) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Forum'),
+        content: const Text('Are you sure you want to delete this entire forum and all its contents? This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _deleteForum(forumId);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildNotificationIcon() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return const SizedBox.shrink();
 
     return StreamBuilder<QuerySnapshot>(
-      // Query the top-level notification collection for this user
       stream: FirebaseFirestore.instance
           .collection('notification')
           .where('recipientId', isEqualTo: currentUser.uid)
@@ -87,27 +132,15 @@ class _ForumState extends State<Forum> {
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
 
-    // Build the query dynamically for efficient, server-side filtering
-    Query query;
-    if (_searchQuery.isNotEmpty) {
-      // When searching, filter by title on the server. This is fast and requires no manual index.
-      query = FirebaseFirestore.instance
-          .collection('forum')
-          .where('title', isGreaterThanOrEqualTo: _searchQuery)
-          .where('title', isLessThanOrEqualTo: '$_searchQuery\uf8ff')
-          .orderBy('title');
-    } else {
-      // When not searching, just get the most recent forums. This is also fast.
-      query = FirebaseFirestore.instance
-          .collection('forum')
-          .orderBy('timestamp', descending: true);
-    }
+    Query query = FirebaseFirestore.instance
+        .collection('forum')
+        .orderBy('timestamp', descending: true);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Forums'),
         actions: [
-          _buildNotificationIcon(), // Add the notification icon here
+          _buildNotificationIcon(),
         ],
       ),
       body: Column(
@@ -127,51 +160,74 @@ class _ForumState extends State<Forum> {
             ),
           ),
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: query.snapshots(), // Use the new, efficient server-side query
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Padding(padding: const EdgeInsets.all(16.0), child: Text('Error: ${snapshot.error}')));
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No forums found.'));
-                }
+            child: FutureBuilder<String?>(
+              future: _userRoleFuture,
+              builder: (context, userRoleSnapshot) {
+                final userRole = userRoleSnapshot.data;
+                final canModerate = userRole?.toLowerCase() == 'admin' || userRole?.toLowerCase() == 'teacher';
 
-                // Filter for visibility on the client-side (this is fast because the list is already small)
-                var visibleForums = snapshot.data!.docs.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final isPrivate = data['access'] == 'private';
-                  if (!isPrivate) return true;
-                  final members = List<String>.from(data['members'] ?? []);
-                  return currentUser != null && members.contains(currentUser.uid);
-                }).toList();
+                return StreamBuilder<QuerySnapshot>(
+                  stream: query.snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Padding(padding: const EdgeInsets.all(16.0), child: Text('Error: ${snapshot.error}')));
+                    }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Center(child: Text('No forums found.'));
+                    }
 
-                if (visibleForums.isEmpty) {
-                  return const Center(child: Text('No forums match your search or you do not have access.'));
-                }
+                    var filteredDocs = snapshot.data!.docs;
 
-                return ListView.builder(
-                  itemCount: visibleForums.length,
-                  itemBuilder: (context, index) {
-                    final forum = visibleForums[index];
-                    final data = forum.data() as Map<String, dynamic>;
-                    final isPrivate = data['access'] == 'private';
-                    final isCreator = currentUser?.uid == data['creatorId'];
+                    if (_searchQuery.isNotEmpty) {
+                      filteredDocs = filteredDocs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final title = (data['title'] as String?)?.toLowerCase() ?? '';
+                        return title.contains(_searchQuery.toLowerCase());
+                      }).toList();
+                    }
 
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      child: ListTile(
-                        leading: Icon(isPrivate ? Icons.lock : Icons.public),
-                        title: Text(data['title'] ?? 'No Title', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(data['description'] ?? 'No Description'),
-                        trailing: (isPrivate && isCreator)
-                            ? ElevatedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ManageForumMembersScreen(forumId: forum.id))), child: const Text('Manage'))
-                            : null,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ForumPostsScreen(forumId: forum.id))),
-                      ),
+                    var visibleForums = filteredDocs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final isPrivate = data['access'] == 'private';
+                      if (!isPrivate) return true;
+                      final members = List<String>.from(data['members'] ?? []);
+                      return currentUser != null && members.contains(currentUser.uid);
+                    }).toList();
+
+                    if (visibleForums.isEmpty) {
+                      return const Center(child: Text('No forums match your search or you do not have access.'));
+                    }
+
+                    return ListView.builder(
+                      itemCount: visibleForums.length,
+                      itemBuilder: (context, index) {
+                        final forum = visibleForums[index];
+                        final data = forum.data() as Map<String, dynamic>;
+                        final isPrivate = data['access'] == 'private';
+                        final isCreator = currentUser?.uid == data['creatorId'];
+
+                        return Card(
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                          child: ListTile(
+                            leading: Icon(isPrivate ? Icons.lock : Icons.public),
+                            title: Text(data['title'] ?? 'No Title', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text(data['description'] ?? 'No Description'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isPrivate && isCreator)
+                                  ElevatedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ManageForumMembersScreen(forumId: forum.id))), child: const Text('Manage')),
+                                if (canModerate) 
+                                  IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _showDeleteConfirmation(forum.id)),
+                              ],
+                            ),
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ForumPostsScreen(forumId: forum.id))),
+                          ),
+                        );
+                      },
                     );
                   },
                 );
