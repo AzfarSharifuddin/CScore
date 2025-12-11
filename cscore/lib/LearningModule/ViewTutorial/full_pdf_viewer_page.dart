@@ -88,7 +88,7 @@ class _FullPdfViewerPageState extends State<FullPdfViewerPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.fileName),
-        backgroundColor: Colors.blue.shade700,
+        backgroundColor: Colors.red.shade600,
         foregroundColor: Colors.white,
         elevation: 4,
       ),

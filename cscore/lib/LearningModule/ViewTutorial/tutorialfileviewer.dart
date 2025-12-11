@@ -12,7 +12,6 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-
 import 'viewpptxonline.dart';
 import 'full_pdf_viewer_page.dart';
 import 'tutorialmodel.dart';
@@ -67,6 +66,28 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
   Future<bool> _hasInternet() async {
     final result = await Connectivity().checkConnectivity();
     return result != ConnectivityResult.none;
+  }
+
+  Future<void> _smoothSeek(Duration position) async {
+    if (_videoController == null) return;
+
+    bool wasPlaying = _videoController!.value.isPlaying;
+
+    // Pause first to prevent stutter
+    await _videoController!.pause();
+
+    // Perform seek
+    await _videoController!.seekTo(position);
+
+    // Give decoder time to reload audio buffer
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Resume if previously playing
+    if (wasPlaying) {
+      await _videoController!.play();
+    }
+
+    if (mounted) setState(() {});
   }
 
   // --------------------------------------------------------
@@ -201,19 +222,30 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
         return;
       }
 
-      // 1) Delete from Storage (use URL directly)
+      // 1) DELETE FILES FROM STORAGE
       if (widget.file.fileUrl.isNotEmpty) {
         try {
-          await FirebaseStorage.instance
-              .refFromURL(widget.file.fileUrl)
-              .delete();
+          // Processed version
+          final processedRef = FirebaseStorage.instance.refFromURL(widget.file.fileUrl);
+          final processedPath = processedRef.fullPath;
+          await processedRef.delete();
+
+          // Delete original video if processed
+          if (processedPath.endsWith("_processed.mp4")) {
+            final originalPath = processedPath.replaceFirst("_processed.mp4", ".mp4");
+            final originalRef = FirebaseStorage.instance.ref(originalPath);
+            try {
+              await originalRef.delete();
+            } catch (e) {
+              debugPrint("Original video delete skipped: $e");
+            }
+          }
         } catch (e) {
-          // If file already gone, just log and continue
-          debugPrint("Storage delete failed (continuing): $e");
+          debugPrint("Storage deletion error: $e");
         }
       }
 
-      // 2) Delete ONLY the matching document (first match) in Firestore
+      // 2) DELETE THE DOCUMENT
       final snap = await FirebaseFirestore.instance
           .collection('tutorial')
           .doc(widget.subtopic)
@@ -231,7 +263,7 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
       );
 
       Future.delayed(const Duration(milliseconds: 300), () {
-        Navigator.pop(context, true);  // return true to indicate deletion happened
+        Navigator.pop(context, true);
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -344,10 +376,9 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
             children: [
               IconButton(
                 icon: const Icon(Icons.replay_10, size: 32),
-                onPressed: () {
+                onPressed: () async {
                   final pos = _videoController!.value.position;
-                  _videoController!
-                      .seekTo(pos - const Duration(seconds: 10));
+                  await _smoothSeek(pos - const Duration(seconds: 10));
                 },
               ),
               IconButton(
@@ -368,10 +399,9 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
               ),
               IconButton(
                 icon: const Icon(Icons.forward_10, size: 32),
-                onPressed: () {
+                onPressed: () async {
                   final pos = _videoController!.value.position;
-                  _videoController!
-                      .seekTo(pos + const Duration(seconds: 10));
+                  await _smoothSeek(pos + const Duration(seconds: 10));
                 },
               ),
               IconButton(
