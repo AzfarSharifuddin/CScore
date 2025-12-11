@@ -1,14 +1,14 @@
 import 'dart:io';
 import 'dart:typed_data';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:mime/mime.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:mime/mime.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:video_compress/video_compress.dart';
 
 class AddTutorialPage extends StatefulWidget {
@@ -34,7 +34,6 @@ class _AddTutorialPageState extends State<AddTutorialPage> {
   bool _isUploading = false;
   double _progress = 0.0;
 
-  // 20 MB limit
   static const int maxBytes = 20 * 1024 * 1024;
 
   @override
@@ -45,83 +44,82 @@ class _AddTutorialPageState extends State<AddTutorialPage> {
     super.dispose();
   }
 
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
+  // --------------------------------------------------------------
+  // Fetch existing subtopics for dropdown
+  // --------------------------------------------------------------
   Future<List<String>> _fetchSubtopics() async {
     final snap = await FirebaseFirestore.instance.collection("tutorial").get();
+
     return snap.docs.map((e) => e.id).toList();
   }
 
+  // --------------------------------------------------------------
+  // PICK FILE
+  // --------------------------------------------------------------
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final res = await FilePicker.platform.pickFiles(
       allowMultiple: false,
       type: FileType.any,
     );
-    if (result == null) return;
 
-    _pickedFile = result.files.single;
+    if (res == null) return;
+
+    _pickedFile = res.files.single;
     _localFile = File(_pickedFile!.path!);
+
     setState(() {});
   }
 
-  String _detectType(String name) {
+  // --------------------------------------------------------------
+  // FILE TYPE DETECTION
+  // --------------------------------------------------------------
+  String detectType(String name) {
     final ext = name.split('.').last.toLowerCase();
 
-    if (['mp4', 'mov', 'mkv', 'avi', 'webm'].contains(ext)) return 'video';
     if (['pdf'].contains(ext)) return 'pdf';
+    if (['mp4', 'mov', 'mkv', 'avi', 'webm'].contains(ext)) return 'video';
     if (['ppt', 'pptx'].contains(ext)) return 'ppt';
     return ext;
   }
 
-  Future<Uint8List?> _compressImage(File file) {
-    return FlutterImageCompress.compressWithFile(file.path, quality: 75);
+  // --------------------------------------------------------------
+  // IMAGE COMPRESSION
+  // --------------------------------------------------------------
+  Future<Uint8List?> compressImage(File file) async {
+    return await FlutterImageCompress.compressWithFile(file.path, quality: 75);
   }
 
-  Future<File?> _compressVideo(File file) async {
+  // --------------------------------------------------------------
+  // VIDEO COMPRESSION
+  // --------------------------------------------------------------
+  Future<File?> compressVideo(File file) async {
     try {
       final compressed = await VideoCompress.compressVideo(
         file.path,
         quality: VideoQuality.MediumQuality,
       );
       return compressed?.file;
-    } catch (_) {
+    } catch (e) {
       return null;
     }
   }
 
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  // ---------------------------------------------------------------------------
-  // STORAGE UPLOAD
-  // ---------------------------------------------------------------------------
-
-  /// Uploads raw file bytes to Storage under a canonical name.
-  /// For video:  tutorial_files/<subtopic>/video_<ts>.mp4
-  /// For others: tutorial_files/<subtopic>/file_<ts>.<ext>
-  Future<String> _uploadToStorage({
-    required String subtopic,
-    required Uint8List data,
-    required String contentType,
-    required bool isVideo,
-    required String originalName,
-  }) async {
+  // --------------------------------------------------------------
+  // FIREBASE STORAGE UPLOAD
+  // --------------------------------------------------------------
+  Future<String> uploadToFirebaseStorage(
+    String subtopic,
+    String rawName,
+    Uint8List data,
+    String contentType,
+  ) async {
+    final safeName = rawName.replaceAll(RegExp(r'[^\w\.-]'), "_");
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
-    late final String baseName;
-    if (isVideo) {
-      baseName = "video_$timestamp.mp4";
-    } else {
-      final ext = p.extension(originalName).toLowerCase();
-      final safeExt = ext.isEmpty ? ".bin" : ext;
-      baseName = "file_$timestamp$safeExt";
-    }
+    final ext = p.extension(rawName);
+    final path = "tutorial_files/$subtopic/${safeName}_$timestamp$ext";
 
-    final storagePath = "tutorial_files/$subtopic/$baseName";
-    final ref = FirebaseStorage.instance.ref(storagePath);
+    final ref = FirebaseStorage.instance.ref(path);
 
     final uploadTask = ref.putData(
       data,
@@ -129,69 +127,49 @@ class _AddTutorialPageState extends State<AddTutorialPage> {
     );
 
     uploadTask.snapshotEvents.listen((event) {
-      if (!mounted) return;
       setState(() {
-        _progress = event.totalBytes == 0
-            ? 0
-            : event.bytesTransferred / event.totalBytes;
+        _progress = event.bytesTransferred / event.totalBytes;
       });
     });
 
     final snap = await uploadTask;
-
-    // Return the *storage path* (not URL) so we can derive processed name
-    return snap.ref.fullPath; // e.g. tutorial_files/CSS/video_123456789.mp4
+    final url = await snap.ref.getDownloadURL();
+    return url;
   }
 
-  /// Waits until Cloud Function writes `<baseName>__processed.mp4`
-  /// and returns the *download URL* of that processed video.
-  Future<String> _waitForProcessedVideo(String originalStoragePath) async {
-    // originalStoragePath: tutorial_files/CSS/video_123456789.mp4
-    final dir = p.dirname(originalStoragePath); // tutorial_files/CSS
-    final base = p.basename(originalStoragePath); // video_123456789.mp4
-
-    // This must match your Cloud Function naming:
-    // processed = base.replaceFirst('.mp4', '__processed.mp4');
-    final processedBase = base.replaceFirst(".mp4", "_processed.mp4");
-    final processedPath = "$dir/$processedBase";
-
-    final processedRef = FirebaseStorage.instance.ref(processedPath);
-
-    // Poll up to ~60 seconds (30 x 2s)
-    for (int i = 0; i < 150; i++) {
-      try {
-        return await processedRef.getDownloadURL();
-      } catch (_) {
-        await Future.delayed(const Duration(seconds: 2));
-      }
-    }
-
-    throw Exception("Processed video not found after waiting.");
-  }
-
-  // ---------------------------------------------------------------------------
-  // SUBMIT
-  // ---------------------------------------------------------------------------
-
+  // --------------------------------------------------------------
+  // UPLOAD BUTTON PRESSED
+  // --------------------------------------------------------------
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (selectedSubtopic == null) {
-      _showSnack("Select a subtopic");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Select a subtopic")));
       return;
     }
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      _showSnack("You must be logged in");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("You must be logged in")));
       return;
     }
 
-    final userDoc =
-        await FirebaseFirestore.instance.collection("user").doc(user.uid).get();
+    // Check role
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .get();
 
-    if (!userDoc.exists || userDoc["role"] != "Teacher") {
-      _showSnack("Only teachers can upload");
+    if (!doc.exists || doc["role"] != "Teacher") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Only teachers are allowed to upload materials"),
+        ),
+      );
       return;
     }
 
@@ -201,100 +179,106 @@ class _AddTutorialPageState extends State<AddTutorialPage> {
       String fileUrl = "";
       String fileType = "unknown";
 
-      // ---------------------------------------------------------- URL MODE
+      // ----------------------------- URL UPLOAD -----------------------------
       if (_useUrl) {
         if (_urlValue == null || _urlValue!.isEmpty) {
-          _showSnack("Enter URL");
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Please enter a URL")));
           return;
         }
 
         fileUrl = _urlValue!;
-        fileType = _detectType(fileUrl);
+        fileType = detectType(fileUrl);
       }
-
-      // ---------------------------------------------------------- FILE MODE
+      // ----------------------------- FILE UPLOAD -----------------------------
       else {
-        if (_pickedFile == null || _localFile == null) {
-          _showSnack("Pick a file");
+        if (_pickedFile == null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Pick a file first")));
           return;
         }
 
         final fileName = _pickedFile!.name;
-        fileType = _detectType(fileName);
+        fileType = detectType(fileName); // <--- Real file extension
 
-        Uint8List? bytes;
-        File file = _localFile!;
-        int size = file.lengthSync();
+        Uint8List? uploadBytes;
+        File? finalFile = _localFile!;
+        int size = finalFile.lengthSync();
 
-        // Compress if needed
         if (size > maxBytes) {
-          if (fileType == "video") {
-            final compressed = await _compressVideo(file);
-            if (compressed == null || compressed.lengthSync() > maxBytes) {
-              throw Exception("Video too large after compression.");
+          if (["mp4", "mov", "mkv", "avi", "webm"].contains(fileType)) {
+            final compressedFile = await compressVideo(finalFile);
+            if (compressedFile == null ||
+                compressedFile.lengthSync() > maxBytes) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Video too large even after compression"),
+                ),
+              );
+              return;
             }
-            file = compressed;
+            finalFile = compressedFile;
           } else {
-            bytes = await _compressImage(file);
-            if (bytes == null || bytes.lengthInBytes > maxBytes) {
-              throw Exception("Image too large after compression.");
+            final imgData = await compressImage(finalFile);
+            if (imgData == null || imgData.lengthInBytes > maxBytes) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Image too large even after compression"),
+                ),
+              );
+              return;
             }
+            uploadBytes = imgData;
           }
         }
 
-        bytes ??= await file.readAsBytes();
+        uploadBytes ??= await finalFile.readAsBytes();
 
-        final isVideo = fileType == "video";
-        final contentType = isVideo
-            ? "video/mp4"
-            : (lookupMimeType(fileName) ?? "application/octet-stream");
+        final contentType =
+            lookupMimeType(fileName) ?? "application/octet-stream";
 
-        // 1. Upload raw file, get its storage path
-        final storagePath = await _uploadToStorage(
-          subtopic: selectedSubtopic!,
-          data: bytes,
-          contentType: contentType,
-          isVideo: isVideo,
-          originalName: fileName,
+        fileUrl = await uploadToFirebaseStorage(
+          selectedSubtopic!,
+          fileName,
+          uploadBytes,
+          contentType,
         );
-
-        // 2. If video → wait for processed version, else use raw URL
-        if (isVideo) {
-          fileUrl = await _waitForProcessedVideo(storagePath);
-        } else {
-          fileUrl =
-              await FirebaseStorage.instance.ref(storagePath).getDownloadURL();
-        }
       }
 
-      // ---------------------------------------------------------- Save to Firestore
+      // ----------------------------- SAVE FIRESTORE -----------------------------
       await FirebaseFirestore.instance
           .collection("tutorial")
           .doc(selectedSubtopic)
           .collection("files")
           .add({
-        "fileName": _titleCtrl.text.trim(),
-        "description": _descCtrl.text.trim(),
-        "fileType": fileType,
-        "fileUrl": fileUrl, // processed URL for videos
-        "uploadedBy": user.uid,
-        "teacherName": userDoc["name"],
-        "modifiedDate": FieldValue.serverTimestamp(),
-      });
+            "fileName": _titleCtrl.text.trim(),
+            "description": _descCtrl.text.trim(),
+            "fileType": fileType,
+            "fileUrl": fileUrl,
+            "uploadedBy": user.uid,
+            "teacherName": doc["name"],
+            "modifiedDate": FieldValue.serverTimestamp(),
+          });
 
-      _showSnack("Upload successful");
-      if (mounted) Navigator.pop(context, true);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Upload successful!")));
+
+      Navigator.pop(context, true);
     } catch (e) {
-      _showSnack("Upload failed: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Upload failed: $e")));
     } finally {
-      if (mounted) setState(() => _isUploading = false);
+      setState(() => _isUploading = false);
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // UI (UNCHANGED)
-  // ---------------------------------------------------------------------------
-
+  // --------------------------------------------------------------
+  // UI
+  // --------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -318,6 +302,7 @@ class _AddTutorialPageState extends State<AddTutorialPage> {
               key: _formKey,
               child: Column(
                 children: [
+                  // ---------------- Title ----------------
                   TextFormField(
                     controller: _titleCtrl,
                     decoration: const InputDecoration(
@@ -327,6 +312,8 @@ class _AddTutorialPageState extends State<AddTutorialPage> {
                     validator: (v) => v!.isEmpty ? "Enter a title" : null,
                   ),
                   const SizedBox(height: 12),
+
+                  // ---------------- Description ----------------
                   TextFormField(
                     controller: _descCtrl,
                     maxLines: 3,
@@ -336,25 +323,29 @@ class _AddTutorialPageState extends State<AddTutorialPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
+
+                  // ---------------- Subtopic Dropdown ----------------
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(
                       labelText: "Subtopic",
                       border: OutlineInputBorder(),
                     ),
                     items: subtopics
-                        .map((s) =>
-                            DropdownMenuItem(value: s, child: Text(s)))
+                        .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                         .toList(),
                     value: selectedSubtopic,
                     onChanged: (v) => setState(() => selectedSubtopic = v),
                     validator: (v) => v == null ? "Select a subtopic" : null,
                   ),
                   const SizedBox(height: 15),
+
+                  // ---------------- Switch (URL/File) ----------------
                   SwitchListTile(
                     title: const Text("Upload via URL"),
                     value: _useUrl,
                     onChanged: (v) => setState(() => _useUrl = v),
                   ),
+
                   if (_useUrl)
                     TextFormField(
                       decoration: const InputDecoration(
@@ -385,7 +376,9 @@ class _AddTutorialPageState extends State<AddTutorialPage> {
                               ),
                       ],
                     ),
+
                   const SizedBox(height: 20),
+
                   if (_isUploading)
                     Column(
                       children: [
@@ -394,12 +387,15 @@ class _AddTutorialPageState extends State<AddTutorialPage> {
                         const Text("Uploading..."),
                       ],
                     ),
+
                   const SizedBox(height: 12),
+
                   ElevatedButton.icon(
                     onPressed: _isUploading ? null : _submit,
                     icon: const Icon(Icons.cloud_upload),
                     label: Text(
-                        _useUrl ? "Add (URL)" : "Upload & Add Tutorial"),
+                      _useUrl ? "Add (URL)" : "Upload & Add Tutorial",
+                    ),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
                     ),

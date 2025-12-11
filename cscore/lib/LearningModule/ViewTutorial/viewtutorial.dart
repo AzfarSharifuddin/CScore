@@ -24,7 +24,7 @@ class _ViewTutorialPageState extends State<ViewTutorialPage> {
     if (user == null) return null;
 
     final doc = await FirebaseFirestore.instance
-        .collection('user')
+        .collection('users')
         .doc(user.uid)
         .get();
 

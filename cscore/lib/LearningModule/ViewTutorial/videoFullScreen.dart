@@ -11,21 +11,6 @@ class VideoFullScreen extends StatefulWidget {
 }
 
 class _VideoFullScreenState extends State<VideoFullScreen> {
-    Future<void> _smoothSeek(Duration position) async {
-    bool wasPlaying = widget.controller.value.isPlaying;
-
-    await widget.controller.pause();
-    await widget.controller.seekTo(position);
-
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    if (wasPlaying) {
-      await widget.controller.play();
-    }
-
-    if (mounted) setState(() {});
-  }
-
   @override
   void initState() {
     super.initState();
@@ -44,32 +29,15 @@ class _VideoFullScreenState extends State<VideoFullScreen> {
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Stack(
+          alignment: Alignment.bottomCenter,
           children: [
-            // Video
             Center(
               child: AspectRatio(
                 aspectRatio: widget.controller.value.aspectRatio,
                 child: VideoPlayer(widget.controller),
               ),
             ),
-
-            // Exit Fullscreen Button (TOP-RIGHT)
-            Positioned(
-              top: 10,
-              right: 10,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 32),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-
-            // Bottom controls
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: _buildControls(),
-            ),
+            _buildControls(),
           ],
         ),
       ),
@@ -90,9 +58,9 @@ class _VideoFullScreenState extends State<VideoFullScreen> {
           children: [
             IconButton(
               icon: const Icon(Icons.replay_10, color: Colors.white, size: 32),
-              onPressed: () async {
+              onPressed: () {
                 final pos = widget.controller.value.position;
-                await _smoothSeek(pos - const Duration(seconds: 10));
+                widget.controller.seekTo(pos - const Duration(seconds: 10));
               },
             ),
             IconButton(
@@ -114,9 +82,9 @@ class _VideoFullScreenState extends State<VideoFullScreen> {
             ),
             IconButton(
               icon: const Icon(Icons.forward_10, color: Colors.white, size: 32),
-              onPressed: () async {
+              onPressed: () {
                 final pos = widget.controller.value.position;
-                await _smoothSeek(pos + const Duration(seconds: 10));
+                widget.controller.seekTo(pos + const Duration(seconds: 10));
               },
             ),
           ],

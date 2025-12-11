@@ -4,11 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:cscore/QuizModule/Services/quiz_service.dart';
 import 'add_question.dart';
 
-// NEW IMPORTS FOR FILE PICKER + BADGE
-import 'package:file_picker/file_picker.dart';
-import 'dart:io';
-import 'package:cscore/QuizModule/Services/badge_service.dart';
-
 const Color mainColor = Color.fromRGBO(0, 70, 67, 1);
 
 class CreateQuizPage extends StatefulWidget {
@@ -25,25 +20,8 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
   String quizType = "exercise";
   int duration = 10;
   int numQuestions = 1;
-  int maxAttempts = 1;
+  int maxAttempts = 1; // new
   DateTime? deadline;
-
-  // File Picker selected badge file
-  File? badgeFile;
-
-  // Pick badge using File Picker
-  Future<void> pickBadgeFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['png', 'jpg', 'jpeg'],
-    );
-
-    if (result != null && result.files.single.path != null) {
-      setState(() {
-        badgeFile = File(result.files.single.path!);
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,31 +70,7 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
                 onChanged: (v) => maxAttempts = int.tryParse(v) ?? 1,
               ),
 
-              const SizedBox(height: 20),
-
-              // =============================
-              // BADGE UPLOAD SECTION
-              // =============================
-              Text("Badge Icon", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: mainColor),
-                onPressed: pickBadgeFile,
-                child: const Text("Upload Badge Image"),
-              ),
-
-              if (badgeFile != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Image.file(
-                    badgeFile!,
-                    height: 120,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-
-              const SizedBox(height: 20),
-
+              const SizedBox(height: 10),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: mainColor),
                 onPressed: () async {
@@ -129,26 +83,20 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
                   if (picked != null) setState(() => deadline = picked);
                 },
                 child: Text(
-                  deadline == null
-                      ? "Select Deadline"
-                      : "Deadline: ${DateFormat('dd/MM/yyyy').format(deadline!)}",
+                  deadline == null ? "Select Deadline" : "Deadline: ${DateFormat('dd/MM/yyyy').format(deadline!)}",
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
 
               const SizedBox(height: 30),
-
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: mainColor, padding: const EdgeInsets.symmetric(vertical: 14)),
                 onPressed: () async {
                   if (!_formKey.currentState!.validate()) return;
                   if (deadline == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Please select deadline.")));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select deadline.")));
                     return;
                   }
-
-                  // CREATE QUIZ METADATA
                   final quizId = await QuizService().createQuizMetadata(
                     title: title,
                     description: description,
@@ -159,24 +107,8 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
                     numQuestions: numQuestions,
                     maxAttempts: maxAttempts,
                   );
-
-                  // =============================
-                  // CREATE BADGE AUTOMATICALLY
-                  // =============================
                   if (quizId != null) {
-                    await BadgeService.createBadgeForQuiz(
-                      quizId,
-                      title,
-                      badgeFile,
-                    );
-
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            AddQuestionsPage(quizId: quizId, numQuestions: numQuestions),
-                      ),
-                    );
+                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AddQuestionsPage(quizId: quizId, numQuestions: numQuestions)));
                   }
                 },
                 child: const Text("Continue", style: TextStyle(fontSize: 18, color: Colors.white)),

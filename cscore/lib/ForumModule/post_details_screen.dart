@@ -53,10 +53,12 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
     final replierName = (await FirebaseFirestore.instance.collection('user').doc(user.uid).get()).data()?['name'] ?? 'Anonymous';
     final content = _replyController.text.trim(); // Store content before clearing
 
+    // Clear the controller and unfocus immediately for a better UI experience
     _replyController.clear();
     _replyFocusNode.unfocus();
 
     try {
+      // Create the reply
       await FirebaseFirestore.instance
           .collection('forum').doc(widget.forumId)
           .collection('post').doc(widget.postId)
@@ -67,10 +69,11 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
         'timestamp': FieldValue.serverTimestamp(),
       });
 
+      // Create notification for the post author
       final postAuthorId = _postData?['authorId'];
       if (postAuthorId != null && postAuthorId != user.uid) {
-        await FirebaseFirestore.instance.collection('notification').add({ 
-          'recipientId': postAuthorId,
+        await FirebaseFirestore.instance.collection('notification').add({ // Use root collection
+          'recipientId': postAuthorId, // Add a field for the recipient
           'title': '$replierName replied to your post',
           'body': _postData?['title'] ?? '',
           'timestamp': FieldValue.serverTimestamp(),
@@ -81,11 +84,13 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
         });
       }
     } catch (e) {
+        // If something fails, put the text back in the controller for the user to retry
         _replyController.text = content;
     }
   }
 
   Future<void> _showDeleteConfirmation(BuildContext context, {String? replyId}) async {
+    // ... (rest of the delete function remains the same for now)
     final isPostDelete = replyId == null;
     final path = isPostDelete
         ? FirebaseFirestore.instance.collection('forum').doc(widget.forumId).collection('post').doc(widget.postId)
@@ -158,8 +163,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
 
           _postData = postSnapshot.data() as Map<String, dynamic>;
           final isAuthor = currentUser?.uid == _postData!['authorId'];
-          final userRoleLower = userRole?.toLowerCase();
-          final canModerate = userRoleLower == 'admin' || userRoleLower == 'teacher';
+          final canModerate = userRole == 'Admin' || userRole == 'Teacher';
 
           return Column(
             children: [
@@ -237,49 +241,15 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
         }
 
         return SliverList(delegate: SliverChildBuilderDelegate((context, index) {
-            final reply = replySnapshot.data!.docs[index];
-            final replyData = reply.data() as Map<String, dynamic>;
-            final isReplyAuthor = currentUser?.uid == replyData['authorId'];
-
-            final timestamp = replyData['timestamp'] as Timestamp?;
-            final formattedDate = timestamp != null 
-              ? DateFormat('MMM d, yyyy, hh:mm a').format(timestamp.toDate()) 
-              : 'Replying...';
+            final replyData = replySnapshot.data!.docs[index].data() as Map<String, dynamic>;
+            final bool isReplyAuthor = currentUser?.uid == replyData['authorId'];
 
             return Card(
-              elevation: 2,
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          replyData['authorName'] ?? 'Anonymous',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        if (isReplyAuthor || canModerate)
-                          SizedBox(
-                            height: 24, // Constrain the button size
-                            width: 24,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              icon: const Icon(Icons.delete, size: 18, color: Colors.grey), 
-                              onPressed: () => _showDeleteConfirmation(context, replyId: reply.id)
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(formattedDate, style: Theme.of(context).textTheme.bodySmall),
-                    const SizedBox(height: 12),
-                    Text(replyData['content'] ?? '', style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
+              child: ListTile(
+                title: Text(replyData['authorName'] ?? 'Anonymous', style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(replyData['content'] ?? ''),
+                trailing: (isReplyAuthor || canModerate) ? IconButton(icon: const Icon(Icons.delete, size: 20), onPressed: () => _showDeleteConfirmation(context, replyId: replySnapshot.data!.docs[index].id)) : null,
               ),
             );
           }, childCount: replySnapshot.data!.docs.length),
@@ -290,7 +260,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
 
   Widget _buildReplyInputField() {
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).padding.bottom + 8),
+      padding: const EdgeInsets.all(8.0),
       child: Row(
         children: [
           Expanded(
@@ -299,17 +269,13 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
               focusNode: _replyFocusNode,
               decoration: InputDecoration(
                 hintText: 'Write a reply...',
-                filled: true,
-                fillColor: Colors.grey[200],
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(25)),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          IconButton.filled(
-            style: IconButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
-            icon: const Icon(Icons.send, color: Colors.white),
+          IconButton(
+            icon: const Icon(Icons.send),            
             onPressed: _addReply,
           ),
         ],

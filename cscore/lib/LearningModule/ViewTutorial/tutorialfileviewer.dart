@@ -12,6 +12,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+
 import 'viewpptxonline.dart';
 import 'full_pdf_viewer_page.dart';
 import 'tutorialmodel.dart';
@@ -66,28 +67,6 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
   Future<bool> _hasInternet() async {
     final result = await Connectivity().checkConnectivity();
     return result != ConnectivityResult.none;
-  }
-
-  Future<void> _smoothSeek(Duration position) async {
-    if (_videoController == null) return;
-
-    bool wasPlaying = _videoController!.value.isPlaying;
-
-    // Pause first to prevent stutter
-    await _videoController!.pause();
-
-    // Perform seek
-    await _videoController!.seekTo(position);
-
-    // Give decoder time to reload audio buffer
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    // Resume if previously playing
-    if (wasPlaying) {
-      await _videoController!.play();
-    }
-
-    if (mounted) setState(() {});
   }
 
   // --------------------------------------------------------
@@ -222,30 +201,19 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
         return;
       }
 
-      // 1) DELETE FILES FROM STORAGE
+      // 1) Delete from Storage (use URL directly)
       if (widget.file.fileUrl.isNotEmpty) {
         try {
-          // Processed version
-          final processedRef = FirebaseStorage.instance.refFromURL(widget.file.fileUrl);
-          final processedPath = processedRef.fullPath;
-          await processedRef.delete();
-
-          // Delete original video if processed
-          if (processedPath.endsWith("_processed.mp4")) {
-            final originalPath = processedPath.replaceFirst("_processed.mp4", ".mp4");
-            final originalRef = FirebaseStorage.instance.ref(originalPath);
-            try {
-              await originalRef.delete();
-            } catch (e) {
-              debugPrint("Original video delete skipped: $e");
-            }
-          }
+          await FirebaseStorage.instance
+              .refFromURL(widget.file.fileUrl)
+              .delete();
         } catch (e) {
-          debugPrint("Storage deletion error: $e");
+          // If file already gone, just log and continue
+          debugPrint("Storage delete failed (continuing): $e");
         }
       }
 
-      // 2) DELETE THE DOCUMENT
+      // 2) Delete ONLY the matching document (first match) in Firestore
       final snap = await FirebaseFirestore.instance
           .collection('tutorial')
           .doc(widget.subtopic)
@@ -263,7 +231,7 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
       );
 
       Future.delayed(const Duration(milliseconds: 300), () {
-        Navigator.pop(context, true);
+        Navigator.pop(context, true);  // return true to indicate deletion happened
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -376,9 +344,10 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
             children: [
               IconButton(
                 icon: const Icon(Icons.replay_10, size: 32),
-                onPressed: () async {
+                onPressed: () {
                   final pos = _videoController!.value.position;
-                  await _smoothSeek(pos - const Duration(seconds: 10));
+                  _videoController!
+                      .seekTo(pos - const Duration(seconds: 10));
                 },
               ),
               IconButton(
@@ -399,9 +368,10 @@ class _TutorialFileViewerState extends State<TutorialFileViewer> {
               ),
               IconButton(
                 icon: const Icon(Icons.forward_10, size: 32),
-                onPressed: () async {
+                onPressed: () {
                   final pos = _videoController!.value.position;
-                  await _smoothSeek(pos + const Duration(seconds: 10));
+                  _videoController!
+                      .seekTo(pos + const Duration(seconds: 10));
                 },
               ),
               IconButton(
