@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import "package:cscore/QuizModule/Models/quiz_model.dart";
 import 'quiz.dart';
 import 'package:cscore/DashboardModule/Screens/student_dashboard.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 // 🔹 NEW: student review page import (adjust path if needed)
 import 'package:cscore/QuizModule/Student/review_attempt_page.dart';
 
@@ -27,6 +29,70 @@ class ScoreQuizPage extends StatefulWidget {
 
 class _ScoreQuizPageState extends State<ScoreQuizPage> {
   @override
+   void initState() {
+    super.initState();
+    _awardBadgeIfEligible(); // 🔥 Award badge when score page loads
+  }
+
+  Future<void> _awardBadgeIfEligible() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      debugPrint("⚠ No user logged in.");
+      return;
+    }
+
+    final minScore = (widget.total * 0.5).ceil(); // 50% requirement
+    if (widget.score < minScore) {
+      debugPrint("ℹ Score below 50%. No badge awarded.");
+      return;
+    }
+
+    try {
+      final quizId = widget.quiz.id.trim();
+      debugPrint("🔍 Checking badge for quizId: $quizId");
+
+      // Search in 'award' collection
+      final awardQuery = await FirebaseFirestore.instance
+          .collection('award')
+          .where('quizId', isEqualTo: quizId)
+          .limit(1)
+          .get();
+
+      if (awardQuery.docs.isEmpty) {
+        debugPrint("⚠ No badge found in 'award' collection for quizId: $quizId");
+        return;
+      }
+
+      final badgeData = awardQuery.docs.first.data();
+      final badgeId = awardQuery.docs.first.id;
+
+      final badgeRef = FirebaseFirestore.instance
+          .collection('user')
+          .doc(user.uid)
+          .collection('badge')
+          .doc(badgeId);
+
+      if ((await badgeRef.get()).exists) {
+        debugPrint("ℹ Badge already exists. No duplicate.");
+        return;
+      }
+
+      await badgeRef.set({
+        'title': badgeData['title'],
+        'iconUrl': badgeData['iconUrl'],
+        'description': badgeData['description'] ?? '',
+        'quizId': badgeData['quizId'],
+        'status': 'earned',
+        'earnedAt': FieldValue.serverTimestamp(),
+      });
+
+      debugPrint("🏆 Badge awarded successfully under user/${user.uid}/badge/$badgeId");
+    } catch (e) {
+      debugPrint("❌ Error awarding badge: $e");
+    }
+  }
+   @override
+   
   Widget build(BuildContext context) {
     final double percentage =
         (widget.total > 0) ? (widget.score / widget.total) * 100 : 0;
